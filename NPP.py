@@ -1,4 +1,4 @@
-import pygame
+﻿import pygame
 import time
 import sys
 import math
@@ -639,19 +639,19 @@ class Computer:
         frame_color=(25,25,25)
         keyboard_color=(85,85,85) if self.console.active else (65,65,65)
 
-        pygame.draw.rect(screen,frame_color,(monitor_x-6,monitor_y-6,self.screen_x+12,self.screen_y+12),border_radius=8)
-        pygame.draw.rect(screen,(10,30,10),(monitor_x,monitor_y,self.screen_x,self.screen_y),border_radius=6)
-        pygame.draw.rect(screen,screen_color,(monitor_x+4,monitor_y+4,self.screen_x-8,self.screen_y-8),2,border_radius=4)
+        pygame.draw.rect(screen,frame_color,(monitor_x-6,monitor_y-6,self.screen_x+12,self.screen_y+12))
+        pygame.draw.rect(screen,(10,30,10),(monitor_x,monitor_y,self.screen_x,self.screen_y))
+        pygame.draw.rect(screen,screen_color,(monitor_x+4,monitor_y+4,self.screen_x-8,self.screen_y-8),2)
 
-        pygame.draw.rect(screen,frame_color,(self.x-4,self.y-4,self.keyboard_w+8,self.keyboard_h+8),border_radius=8)
-        pygame.draw.rect(screen,keyboard_color,(self.x,self.y,self.keyboard_w,self.keyboard_h),border_radius=6)
+        pygame.draw.rect(screen,frame_color,(self.x-4,self.y-4,self.keyboard_w+8,self.keyboard_h+8))
+        pygame.draw.rect(screen,keyboard_color,(self.x,self.y,self.keyboard_w,self.keyboard_h))
 
         key_w,key_h=16,12
         start_x=self.x+9
         start_y=self.y+8
         for row in range(2):
             for col in range(7):
-                pygame.draw.rect(screen,(45,45,45),(start_x+col*19,start_y+row*15,key_w,key_h),border_radius=3)
+                pygame.draw.rect(screen,(45,45,45),(start_x+col*19,start_y+row*15,key_w,key_h))
 
         title=self.font.render(self.name,True,(210,255,210))
         screen.blit(title,(monitor_x+8,monitor_y+8))
@@ -663,7 +663,7 @@ class Computer:
                 "Current version:",
                 "KiwiOS v2.0",
                 "Report plant faults here.",
-                "Press Enter. Type exit()."
+                "Enter to report. exit() to exit."
             ]
             self.input_text=""
             self.active=False
@@ -848,7 +848,9 @@ class Reactor:
         self.max_pressure=20
         self.boiling_point=300
         self.boiling=False
+        self.water_level=0.2
     def update(self):
+        self.water_level=clamp(self.water_level,0,1)
         self.boiling=self.avg_temp>self.boiling_point
         if self.boiling:
             self.max_pressure=math.inf
@@ -859,6 +861,16 @@ class Reactor:
             new_pressure=lerp(pressure,15,((self.sprinkler/100)+((self.fine_sprinkler/100)/2))*0.05*dt)
         self.pressure=new_pressure
         self.boiling_point=300+self.pressure*3.5
+        boron_t=abs((knobs[5].value/100)-(knobs[7].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
+        max_saturation = (0.00001 * (reactor.avg_temp ** 2) + 0.00033 * reactor.avg_temp + 0.01) * reactor.water_level
+        max_saturation=clamp(max_saturation,0,1)
+        self.heater=knobs[0].value
+        self.sprinkler=knobs[2].value
+        self.fine_heater=knobs[1].value
+        self.fine_sprinkler=knobs[3].value
+        self.coolant_flow_rate=knobs[4].value
+        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[7].value else 0,(boron_t))
+        self.boron_conc=max(0,self.boron_conc)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 grid=[]
@@ -869,7 +881,7 @@ grid_origin_y=50
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
-
+circ_water=0
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
@@ -907,7 +919,9 @@ knobs=[
     Knob(400, 300, "Coolant Flow Rate", value=0, radius=40, _type=2),
     Knob(400, 400, "Boration", value=0, radius=40, _type=2),
     Knob(400, 500,"Demin. control", value=0, radius=40, _type=2),
-    Knob(280, 300, "switch", vmin=0, vmax=100, value=0, radius=40, _type=1)
+    Knob(280, 300, "switch", vmin=0, vmax=100, value=0, radius=40, _type=1),
+    Knob(40,400,"Makeup Valve",value=0,radius=40,_type=2),
+    Knob(40,500,"Letdown Valve",value=0,radius=40,_type=2)
     ]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
@@ -921,7 +935,7 @@ buttons = [
     Button(610, 510, "H", 3, toggle=False, ready=True),
     Button(490, 530, "ALL", 4, toggle=False, ready=True)
 ]
-plant_terminal=Computer(625,430,155,210,"Plant Console")
+plant_terminal=Computer(635,265,155,210,"Plant Console")
 running = True
 while running:
     for e in pygame.event.get():
@@ -974,16 +988,6 @@ while running:
             for cell in row:
                 if cell.Area in selected_area_set:
                     cell.CR_depth = cr_value
-    max_saturation = 0.00001 * (reactor.avg_temp ** 2) + 0.00033 * reactor.avg_temp + 0.01
-    max_saturation=clamp(max_saturation,0,1)
-    reactor.heater=knobs[0].value
-    reactor.sprinkler=knobs[2].value
-    reactor.fine_heater=knobs[1].value
-    reactor.fine_sprinkler=knobs[3].value
-    reactor.coolant_flow_rate=knobs[4].value
-    new_boron_conc = lerp(reactor.boron_conc,max_saturation,(((knobs[5].value/100)*(reactor.coolant_flow_rate/100))*dt)*0.05)
-    new_boron_conc = lerp(new_boron_conc,0,((knobs[6].value/100)*dt)*0.05)
-    reactor.boron_conc=clamp(new_boron_conc,0,max_saturation)
     CR_throttle.draw(screen)
     for knob in knobs:
         knob.draw(screen)
