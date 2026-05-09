@@ -818,7 +818,8 @@ class GridCell:
             return
         reaction=self.neutron*self.uranium_mass
         burn_rate=0.991
-        self.next_neutrons=(self.neutron*(1.0-self.CR_depth/100))*(1.0-self.xenon)*(1.0-self.core.boron_conc)
+        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
+        self.next_neutrons=self.neutron*k
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
         for n in self.neighbors:
@@ -861,7 +862,7 @@ class Reactor:
             new_pressure=lerp(pressure,15,((self.sprinkler/100)+((self.fine_sprinkler/100)/2))*0.05*dt)
         self.pressure=new_pressure
         self.boiling_point=300+self.pressure*3.5
-        boron_t=abs((knobs[5].value/100)-(knobs[7].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
+        boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
         max_saturation = (0.00001 * (reactor.avg_temp ** 2) + 0.00033 * reactor.avg_temp + 0.01) * reactor.water_level
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
@@ -869,7 +870,7 @@ class Reactor:
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[7].value else 0,(boron_t))
+        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t))
         self.boron_conc=max(0,self.boron_conc)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
@@ -997,6 +998,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-
+    print(reactor.boron_conc)
 pygame.quit()
 sys.exit()
