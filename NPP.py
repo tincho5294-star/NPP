@@ -787,6 +787,7 @@ class GridCell:
         self.Area=area
         self.search_size=20
         self.next_neutrons=0
+        self.neutron_speed=0.2
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
@@ -816,7 +817,7 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        reaction=self.neutron*self.uranium_mass
+        reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
         self.next_neutrons=self.neutron*k
@@ -833,6 +834,7 @@ class GridCell:
                 _,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate,dt)
             self.next_temp+=new_temp-self.temp
             self.next_neutrons+=new_self-self.neutron
+            self.next_neutrons=max(0,self.next_neutrons)
 class Reactor:
     def __init__(self):
         self.avg_temp=20
