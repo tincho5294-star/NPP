@@ -25,7 +25,7 @@ def lerp_color(c1, c2, t):
 def clamp(v,a,b):
     return max(a,min(b,v))
 def heat_exchange(a_temp,b_temp,flow_rate,dt):
-    t=clamp((a_temp-b_temp)*(flow_rate/100)*dt*0.001,0,1)
+    t=clamp(flow_rate*dt,0,1)
     new_a_temp=lerp(a_temp,b_temp,t)
     new_b_temp=lerp(b_temp,a_temp,t)
     return new_a_temp,new_b_temp
@@ -836,6 +836,7 @@ class GridCell:
             self.next_temp+=new_temp-self.temp
             self.next_neutrons+=new_self-self.neutron
             self.next_neutrons=max(0,self.next_neutrons)
+        self.neutron=self.next_neutrons
 class Reactor:
     def __init__(self):
         self.avg_temp=20
