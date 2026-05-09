@@ -817,10 +817,11 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
+        self.neutron_speed*=(1.0-self.core.water_level)
         reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
-        self.next_neutrons=self.neutron*k
+        self.next_neutrons=math.log10(self.neutron*k)
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
         for n in self.neighbors:
