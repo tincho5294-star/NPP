@@ -635,13 +635,12 @@ class Computer:
     def draw(self,screen):
         monitor_x=self.x
         monitor_y=self.y-self.screen_y-12
-        screen_color=(125,255,125) if self.console.active else (100,220,100)
+        screen_color=(255,255,255)
         frame_color=(25,25,25)
         keyboard_color=(85,85,85) if self.console.active else (65,65,65)
 
-        pygame.draw.rect(screen,frame_color,(monitor_x-6,monitor_y-6,self.screen_x+12,self.screen_y+12))
-        pygame.draw.rect(screen,(10,30,10),(monitor_x,monitor_y,self.screen_x,self.screen_y))
-        pygame.draw.rect(screen,screen_color,(monitor_x+4,monitor_y+4,self.screen_x-8,self.screen_y-8),2)
+        pygame.draw.rect(screen,(screen_color),(monitor_x,monitor_y,self.screen_x,self.screen_y),2)
+        pygame.draw.rect(screen,(0,0,0),(monitor_x+4,monitor_y+4,self.screen_x-8,self.screen_y-8))
 
         pygame.draw.rect(screen,frame_color,(self.x-4,self.y-4,self.keyboard_w+8,self.keyboard_h+8))
         pygame.draw.rect(screen,keyboard_color,(self.x,self.y,self.keyboard_w,self.keyboard_h))
@@ -653,7 +652,7 @@ class Computer:
             for col in range(7):
                 pygame.draw.rect(screen,(45,45,45),(start_x+col*19,start_y+row*15,key_w,key_h))
 
-        title=self.font.render(self.name,True,(210,255,210))
+        title=self.font.render(self.name,True,(255,255,255))
         screen.blit(title,(monitor_x+8,monitor_y+8))
         self.console.draw(screen,monitor_x+8,monitor_y+28,self.screen_x-16,self.screen_y-36)
     class Console:
@@ -730,7 +729,7 @@ class Computer:
             old_clip=screen.get_clip()
             screen.set_clip(view)
             line_y=y
-            color=(180,255,180)
+            color=(255,255,255)
             for line in self.message:
                 for wrapped in self.wrap_lines(line,w,self.owner.small_font):
                     label=self.owner.small_font.render(wrapped,True,color)
@@ -739,7 +738,7 @@ class Computer:
 
             status_top=y+h-52
             log_top=y+h-82
-            separator_color=(40,120,40)
+            separator_color=(255,255,255)
             pygame.draw.line(screen,separator_color,(x,log_top-4),(x+w,log_top-4),1)
             pygame.draw.line(screen,separator_color,(x,status_top-4),(x+w,status_top-4),1)
 
@@ -750,21 +749,21 @@ class Computer:
             if not log_lines:
                 log_lines=["No active reports."]
             for wrapped in log_lines[-2:]:
-                label=self.owner.small_font.render(wrapped,True,(210,240,210))
+                label=self.owner.small_font.render(wrapped,True,(255,255,255))
                 screen.blit(label,(x,log_y))
                 log_y+=14
 
             status_y=status_top
             status_lines=self.wrap_lines(self.status,w,self.owner.small_font)
             for wrapped in status_lines[:2]:
-                label=self.owner.small_font.render(wrapped,True,(230,255,150))
+                label=self.owner.small_font.render(wrapped,True,(255,255,255))
                 screen.blit(label,(x,status_y))
                 status_y+=14
 
             prompt=f"> {self.fit_tail(self.input_text,w-18,self.owner.font)}"
             if self.active and (pygame.time.get_ticks()//400)%2==0:
                 prompt+="_"
-            label=self.owner.font.render(prompt,True,(240,255,240))
+            label=self.owner.font.render(prompt,True,(255,255,255))
             screen.blit(label,(x,y+h-18))
             screen.set_clip(old_clip)
 class GridCell:
@@ -821,7 +820,7 @@ class GridCell:
         reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
-        self.next_neutrons=math.log(self.neutron*k)
+        self.next_neutrons=math.log1p(self.neutron*k)/math.log(10)
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
         for n in self.neighbors:
@@ -940,7 +939,7 @@ buttons = [
     Button(610, 510, "H", 3, toggle=False, ready=True),
     Button(490, 530, "ALL", 4, toggle=False, ready=True)
 ]
-plant_terminal=Computer(635,265,155,210,"Plant Console")
+plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
 while running:
     for e in pygame.event.get():
