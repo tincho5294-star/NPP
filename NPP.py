@@ -816,7 +816,7 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        self.neutron_speed*=(1.0-self.core.water_level)
+        self.neutron_speed*=(1.05-(self.core.water_level*0.1)) #TODO: WE GOTTA ADD WATER DENSITY WAHHHHHH
         reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
