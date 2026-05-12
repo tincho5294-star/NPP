@@ -816,7 +816,7 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        self.neutron_speed*=(1.05-(self.core.water_level*0.1)) #TODO: WE GOTTA ADD WATER DENSITY WAHHHHHH
+        self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.0-self.water_density))
         reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
@@ -853,8 +853,9 @@ class Reactor:
         self.boiling_point=300
         self.boiling=False
         self.water_level=0.2
+        self.water_mass=0
+        self.water_density=0
     def update(self):
-        self.water_level=clamp(self.water_level,0,1)
         self.boiling=self.avg_temp>self.boiling_point
         if self.boiling:
             self.max_pressure=math.inf
@@ -875,6 +876,9 @@ class Reactor:
         self.coolant_flow_rate=knobs[4].value
         self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t))
         self.boron_conc=max(0,self.boron_conc)
+        self.water_level=(self.water_mass*self.avg_temp)/500
+        self.water_level=clamp(self.water_level,0,1)
+        self.water_density=self.water_mass/self.water_level
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 grid=[]
