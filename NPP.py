@@ -874,7 +874,7 @@ class Reactor:
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t))
+        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.0-self.water_density)))
         self.boron_conc=max(0,self.boron_conc)
         self.water_level=(self.water_mass*self.avg_temp)/500
         self.water_level=clamp(self.water_level,0,1)
