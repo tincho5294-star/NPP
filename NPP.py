@@ -26,8 +26,7 @@ def clamp(v,a,b):
     return max(a,min(b,v))
 def heat_exchange(a_temp,b_temp,flow_rate,dt):
     t=clamp(flow_rate*dt,0,1)
-    new_a_temp=lerp(a_temp,b_temp,t)
-    new_b_temp=lerp(b_temp,a_temp,t)
+    new_a_temp,new_b_temp=lerp(a_temp,b_temp,t)
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -787,6 +786,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=0
         self.neutron_speed=0.2
+        self.raw_neutron=0
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
@@ -823,18 +823,11 @@ class GridCell:
         self.next_neutrons=math.log1p(self.neutron*k)/math.log(10)
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
+        self.raw_neutron=pow(10,self.neutron)
         for n in self.neighbors:
-            if self.neutron>=n.neutron:
-                new_self,_=heat_exchange(self.neutron,n.neutron,100,dt)
-            else:
-                _,new_self=heat_exchange(n.neutron,self.neutron,100,dt)
-            if self.temp>=n.temp:
-                new_temp,_=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate,dt)
-            else:
-                _,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate,dt)
-            self.next_temp+=new_temp-self.temp
-            self.next_neutrons+=new_self-self.neutron
-            self.next_neutrons=max(0,self.next_neutrons)
+            self.raw_neutron,n.raw_neutron=heat_exchange(self.raw_neutron,n.raw_neutron,100,dt)
+            self.temp,n.temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate,dt)
+        self.next_neutrons=max(0,self.next_neutrons)
         self.neutron=self.next_neutrons
 class Reactor:
     def __init__(self):
