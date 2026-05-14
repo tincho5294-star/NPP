@@ -855,6 +855,7 @@ class Reactor:
         self.water_level=0.2
         self.water_mass=0
         self.water_density=0
+        self.circ_water_mass=0
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
         if self.boiling:
@@ -874,11 +875,16 @@ class Reactor:
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.0-self.water_density)))
+        if self.circ_water_mass>0:
+            self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.0-self.water_density)))
         self.boron_conc=max(0,self.boron_conc)
         self.water_level=(self.water_mass*self.avg_temp)/500
         self.water_level=clamp(self.water_level,0,1)
         self.water_density=safe_div(self.water_mass,self.water_level)
+        self.water_mass+=knobs[8].value*dt
+        self.water_mass-=knobs[9].value*dt
+        self.circ_water_mass+=knobs[9]*dt
+        self.circ_water_mass=clamp(self.circ_water_mass,0,3000)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 grid=[]
@@ -996,6 +1002,7 @@ while running:
             for cell in row:
                 if cell.Area in selected_area_set:
                     cell.CR_depth = cr_value
+                    
     CR_throttle.draw(screen)
     for knob in knobs:
         knob.draw(screen)
