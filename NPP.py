@@ -853,7 +853,7 @@ class Reactor:
         self.boiling_point=300
         self.boiling=False
         self.water_level=0.2
-        self.water_mass=0
+        self.water_mass=0.2
         self.water_density=0
         self.circ_water_mass=0
     def update(self):
@@ -881,10 +881,12 @@ class Reactor:
         self.water_level=(self.water_mass*self.avg_temp)/500
         self.water_level=clamp(self.water_level,0,1)
         self.water_density=safe_div(self.water_mass,self.water_level)
-        self.water_mass+=knobs[8].value*dt
-        self.water_mass-=knobs[9].value*dt
-        self.circ_water_mass+=knobs[9]*dt
-        self.circ_water_mass=clamp(self.circ_water_mass,0,3000)
+        self.water_mass+=(knobs[8].value*0.001)*dt
+        self.water_mass-=(knobs[9].value*0.001)*dt
+        self.circ_water_mass+=(knobs[9].value*0.001)*dt
+        self.circ_water_mass-=(knobs[8].value*0.001)*dt
+        self.circ_water_mass=clamp(self.circ_water_mass,0,1)
+        self.water_density=clamp(self.water_density,0,1)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 grid=[]
