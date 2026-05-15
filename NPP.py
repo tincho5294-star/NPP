@@ -75,6 +75,8 @@ class Button:
         self.radius=radius
         self.hitpad=hitpad
         self.lid_open=bool(lid_open)
+        self.lid_x=self.x
+        self.lid_y=self.y
     def hit_test(self, mx, my):
         if self._type == 1:
             rr = (self.radius + self.hitpad)**2
@@ -87,7 +89,7 @@ class Button:
             
 
             if not self.lid_open:
-                if self.x - w//2 <= mx <= self.x + w//2 and self.y - h//2 <= my <= self.y + h//2:
+                if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h//2 <= my <= self.lid_y + h//2:
                     type_1_and_2_button_sound.play()
                     return True, "lid_opened"
             
@@ -99,7 +101,7 @@ class Button:
                     return True, "button_pressed"
                 
 
-                if self.x - w//2 <= mx <= self.x + w//2 and self.y - h - 10 - h//2 <= my <= self.y - h - 10 + h//2:
+                if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h - 10 - h//2 <= my <= self.lid_y - h - 10 + h//2:
                     return True, "lid_closed"
         elif self._type==3:
             w,h=40,20
@@ -128,6 +130,10 @@ class Button:
 
                     if self.ready:
                         self.toggle = not self.toggle
+        if self.lid_open:
+            self.lid_y=lerp(self.lid_y,self.y-180,dt)
+        else:
+            self.lid_y=lerp(self.lid_y,self.y,dt)
     def draw(self, screen):
         type_4_w, type_4_h = 160, 20
         type_3_w, type_3_h = 40, 20
