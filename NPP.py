@@ -91,7 +91,7 @@ class Button:
             if not self.lid_open:
                 if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h//2 <= my <= self.lid_y + h//2:
                     type_1_and_2_button_sound.play()
-                    return True, "lid_opened"
+                    return True, "lid_touched"
             
 
             else:
@@ -99,10 +99,6 @@ class Button:
                 rr = (self.radius + self.hitpad)**2
                 if (mx - self.x)**2 + (my - self.y)**2 <= rr:
                     return True, "button_pressed"
-                
-
-                if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h - 10 - h//2 <= my <= self.lid_y - h - 10 + h//2:
-                    return True, "lid_closed"
         elif self._type==3:
             w,h=40,20
             if self.x <= mx <= self.x + w and self.y <= my <= self.y + h:
@@ -118,10 +114,8 @@ class Button:
     def handle_event(self, e):
         if e.type == pygame.MOUSEBUTTONDOWN:
             match self.hit_test(e.pos[0], e.pos[1]):
-                case (True, "lid_opened"):
-                    self.lid_open = True
-                case (True, "lid_closed"):
-                    self.lid_open = False
+                case (True, "lid_touched"):
+                    self.lid_open = not self.lid_open
                 case (True, "button_pressed"):
 
                     if self.ready:
