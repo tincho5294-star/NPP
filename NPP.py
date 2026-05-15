@@ -75,6 +75,8 @@ class Button:
         self.radius=radius
         self.hitpad=hitpad
         self.lid_open=bool(lid_open)
+        self.lid_x=self.x
+        self.lid_y=self.y
     def hit_test(self, mx, my):
         if self._type == 1:
             rr = (self.radius + self.hitpad)**2
@@ -86,10 +88,9 @@ class Button:
             w, h = self.radius * 2 + 10, self.radius * 2 + 10
             
 
-            if not self.lid_open:
-                if self.x - w//2 <= mx <= self.x + w//2 and self.y - h//2 <= my <= self.y + h//2:
-                    type_1_and_2_button_sound.play()
-                    return True, "lid_opened"
+            if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h//2 <= my <= self.lid_y + h//2:
+                type_1_and_2_button_sound.play()
+                return True, "lid_touched"
             
 
             else:
@@ -97,10 +98,6 @@ class Button:
                 rr = (self.radius + self.hitpad)**2
                 if (mx - self.x)**2 + (my - self.y)**2 <= rr:
                     return True, "button_pressed"
-                
-
-                if self.x - w//2 <= mx <= self.x + w//2 and self.y - h - 10 - h//2 <= my <= self.y - h - 10 + h//2:
-                    return True, "lid_closed"
         elif self._type==3:
             w,h=40,20
             if self.x <= mx <= self.x + w and self.y <= my <= self.y + h:
@@ -116,10 +113,8 @@ class Button:
     def handle_event(self, e):
         if e.type == pygame.MOUSEBUTTONDOWN:
             match self.hit_test(e.pos[0], e.pos[1]):
-                case (True, "lid_opened"):
-                    self.lid_open = True
-                case (True, "lid_closed"):
-                    self.lid_open = False
+                case (True, "lid_touched"):
+                    self.lid_open = not self.lid_open
                 case (True, "button_pressed"):
 
                     if self.ready:
@@ -128,6 +123,10 @@ class Button:
 
                     if self.ready:
                         self.toggle = not self.toggle
+        if self.lid_open:
+            self.lid_y=lerp(self.lid_y,self.y-180,dt)
+        else:
+            self.lid_y=lerp(self.lid_y,self.y,dt)
     def draw(self, screen):
         type_4_w, type_4_h = 160, 20
         type_3_w, type_3_h = 40, 20
@@ -875,9 +874,6 @@ class Reactor:
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        if self.circ_water_mass>0:
-            self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.0-self.water_density)))
-        self.boron_conc=max(0,self.boron_conc)
         self.water_level=(self.water_mass*self.avg_temp)/500
         self.water_level=clamp(self.water_level,0,1)
         self.water_density=safe_div(self.water_mass,self.water_level)
@@ -887,6 +883,9 @@ class Reactor:
         self.circ_water_mass-=(knobs[8].value*0.001)*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,1)
         self.water_density=clamp(self.water_density,0,1)
+        if self.circ_water_mass>0:
+            self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
+        self.boron_conc=max(0,self.boron_conc)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 grid=[]
