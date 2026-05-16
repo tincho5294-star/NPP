@@ -77,6 +77,19 @@ class Button:
         self.lid_open=bool(lid_open)
         self.lid_x=self.x
         self.lid_y=self.y
+        self.lid_size=None
+        self.lid_half_w=0
+        self.lid_half_h=0
+        self.lid_surface=None
+        if self._type == 2:
+            w = self.radius * 2 + 10
+            h = self.radius * 2 + 10
+            self.lid_size = (w, h)
+            self.lid_half_w = w // 2
+            self.lid_half_h = h // 2
+            self.lid_surface = pygame.Surface((w, h), pygame.SRCALPHA)
+            pygame.draw.rect(self.lid_surface, (135, 206, 235, 100), (0, 0, w, h))
+            pygame.draw.rect(self.lid_surface, (200, 200, 200, 150), (0, 0, w, h), 2)
     def hit_test(self, mx, my):
         if self._type == 1:
             rr = (self.radius + self.hitpad)**2
@@ -85,18 +98,13 @@ class Button:
                 return True, "button_pressed"
 
         elif self._type == 2:
-            w, h = self.radius * 2 + 10, self.radius * 2 + 10
-            
-
-            if self.lid_x - w//2 <= mx <= self.lid_x + w//2 and self.lid_y - h//2 <= my <= self.lid_y + h//2:
+            if self.lid_x - self.lid_half_w <= mx <= self.lid_x + self.lid_half_w and self.lid_y - self.lid_half_h <= my <= self.lid_y + self.lid_half_h:
                 type_1_and_2_button_sound.play()
                 return True, "lid_touched"
-            
-
             else:
-
                 rr = (self.radius + self.hitpad)**2
                 if (mx - self.x)**2 + (my - self.y)**2 <= rr:
+                    type_1_and_2_button_sound.play()
                     return True, "button_pressed"
         elif self._type==3:
             w,h=40,20
@@ -123,10 +131,11 @@ class Button:
 
                     if self.ready:
                         self.toggle = not self.toggle
+    def update(self):
         if self.lid_open:
-            self.lid_y=lerp(self.lid_y,self.y-180,dt)
+            self.lid_y=lerp(self.lid_y,self.y-90,dt*2.0)
         else:
-            self.lid_y=lerp(self.lid_y,self.y,dt)
+            self.lid_y=lerp(self.lid_y,self.y,dt*2.0)
     def draw(self, screen):
         type_4_w, type_4_h = 160, 20
         type_3_w, type_3_h = 40, 20
@@ -157,21 +166,7 @@ class Button:
             else:
                 color = (200, 0, 0)
             pygame.draw.circle(screen, color, (self.x, self.y), self.radius)
-
-
-            w, h = self.radius * 2 + 10, self.radius * 2 + 10
-            lid_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-            lid_color = (135, 206, 235, 100)
-            
-            pygame.draw.rect(lid_surf, lid_color, (0, 0, w, h))
-            pygame.draw.rect(lid_surf, (200, 200, 200, 150), (0, 0, w, h), 2)
-            
-            if not self.lid_open:
-
-                screen.blit(lid_surf, (self.x - w//2, self.y - h//2))
-            else:
-
-                screen.blit(lid_surf, (self.x - w//2, self.y - h - 10 - h//2))
+            screen.blit(self.lid_surface, (self.lid_x - self.lid_half_w, self.lid_y - self.lid_half_h))
 
 
         elif self._type == 3:
@@ -948,7 +943,8 @@ buttons = [
     Button(530, 510, "F", 3, toggle=False, ready=True),
     Button(570, 510, "G", 3, toggle=False, ready=True),
     Button(610, 510, "H", 3, toggle=False, ready=True),
-    Button(490, 530, "ALL", 4, toggle=False, ready=True)
+    Button(490, 530, "ALL", 4, toggle=False, ready=True),
+    Button(700, 530, "test", 2, toggle=False, ready=True)
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
@@ -977,6 +973,8 @@ while running:
         for cell in row:
             cell.neutron=cell.next_neutrons
             cell.temp=cell.next_temp
+    for button in buttons:
+        button.update()
 
     screen.fill((60, 60, 60))
 
@@ -1013,6 +1011,5 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.boron_conc)
 pygame.quit()
 sys.exit()
