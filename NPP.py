@@ -862,7 +862,7 @@ class Reactor:
         self.pressure=new_pressure
         self.boiling_point=300+self.pressure*3.5
         boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
-        max_saturation = (0.00001 * (reactor.avg_temp ** 2) + 0.00033 * reactor.avg_temp + 0.01) * reactor.water_mass
+        max_saturation = (0.00001 * (self.avg_temp ** 2) + 0.00033 * self.avg_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -883,6 +883,7 @@ class Reactor:
         self.boron_conc=max(0,self.boron_conc)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
+current_control_panel=1
 grid=[]
 grid_size=20
 cell_size=10
@@ -922,16 +923,16 @@ font = pygame.font.SysFont(None, 24)
 reactor=Reactor()
 sm=StyleManager()
 knobs=[
-    Knob(280,400, "Heater", value=0, radius=40, _type=2),
-    Knob(280,500, "Fine Control Heater", value=0, radius=40, _type=2),
-    Knob(160,400, "Sprinkler", value=0, radius=40, _type=2),
-    Knob(160,500, "Fine Control Sprinkler", value=0, radius=40, _type=2),
-    Knob(400, 300, "Coolant Flow Rate", value=0, radius=40, _type=2),
-    Knob(400, 400, "Boration", value=0, radius=40, _type=2),
-    Knob(400, 500,"Demin. control", value=0, radius=40, _type=2),
-    Knob(280, 300, "switch", vmin=0, vmax=100, value=0, radius=40, _type=1),
-    Knob(40,400,"Makeup Valve",value=0,radius=40,_type=2),
-    Knob(40,500,"Letdown Valve",value=0,radius=40,_type=2)
+    Knob(300,400, "Heater", value=0, radius=40, _type=2),
+    Knob(300,500, "Fine Control Heater", value=0, radius=40, _type=2),
+    Knob(180,400, "Sprinkler", value=0, radius=40, _type=2),
+    Knob(180,500, "Fine Control Sprinkler", value=0, radius=40, _type=2),
+    Knob(420, 300, "Coolant Flow Rate", value=0, radius=40, _type=2),
+    Knob(420, 400, "Boration", value=0, radius=40, _type=2),
+    Knob(420, 500,"Demin. control", value=0, radius=40, _type=2),
+    Knob(300, 300, "switch", vmin=0, vmax=100, value=0, radius=40, _type=1),
+    Knob(60,400,"Makeup Valve",value=0,radius=40,_type=2),
+    Knob(60,500,"Letdown Valve",value=0,radius=40,_type=2)
     ]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
