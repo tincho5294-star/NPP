@@ -77,19 +77,20 @@ class Button:
         self.lid_open=bool(lid_open)
         self.lid_x=self.x
         self.lid_y=self.y
-        self.lid_size=None
         self.lid_half_w=0
         self.lid_half_h=0
         self.lid_surface=None
+        self.lid_w=90
+        self.lid_h=90
         if self._type == 2:
-            w = self.radius * 2 + 10
-            h = self.radius * 2 + 10
-            self.lid_size = (w, h)
-            self.lid_half_w = w // 2
-            self.lid_half_h = h // 2
-            self.lid_surface = pygame.Surface((w, h), pygame.SRCALPHA)
-            pygame.draw.rect(self.lid_surface, (135, 206, 235, 100), (0, 0, w, h))
-            pygame.draw.rect(self.lid_surface, (200, 200, 200, 150), (0, 0, w, h), 2)
+            self.w = self.radius * 2 + 10
+            self.h = self.radius * 2 + 10
+            self.lid_size = [self.w, self.h]
+            self.lid_half_w = self.w // 2
+            self.lid_half_h = self.h // 2
+            self.lid_surface = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            pygame.draw.rect(self.lid_surface, (135, 206, 235, 100), (0, 0, self.w, self.h))
+            pygame.draw.rect(self.lid_surface, (200, 200, 200, 150), (0, 0, self.w, self.h), 2)
     def hit_test(self, mx, my):
         if self._type == 1:
             rr = (self.radius + self.hitpad)**2
@@ -768,8 +769,8 @@ class GridCell:
         self.next_temp=20
         self.ix=ix
         self.iy=iy
-        self.uranium_mass=0
-        self.neutron=0
+        self.uranium_mass=3.5
+        self.neutron=1
         self.temp=20
         self.xenon=0
         self.search_size=20
@@ -779,7 +780,7 @@ class GridCell:
         self.CR_depth=0
         self.Area=area
         self.search_size=20
-        self.next_neutrons=0
+        self.next_neutrons=1
         self.neutron_speed=0.2
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
@@ -810,8 +811,8 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.0-self.core.water_density))
-        reaction=self.neutron*self.uranium_mass*(1.05-self.neutron_speed)
+        self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density))
+        reaction=self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*(1.0-self.core.water_mass)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
         self.next_neutrons+=(self.neutron*k)*dt
@@ -830,6 +831,8 @@ class GridCell:
             else:
                 _,new_temp=heat_exchange(n.temp,self.temp,100,dt)
             self.next_temp += new_temp-base_temp
+        self.next_temp=lerp(self.next_temp,20,1-self.core.water_mass)
+        self.next_temp=max(20,self.next_temp)
 class Reactor:
     def __init__(self):
         self.avg_temp=20
@@ -846,8 +849,8 @@ class Reactor:
         self.max_pressure=20
         self.boiling_point=300
         self.boiling=False
-        self.water_level=0.2
-        self.water_mass=0.2
+        self.water_level=1
+        self.water_mass=1
         self.water_density=0
         self.circ_water_mass=0
     def update(self):
