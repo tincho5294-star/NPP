@@ -777,7 +777,7 @@ class GridCell:
         self.void_coeff=0
         self.color=(0,255,0)
         self.neighbors=[]
-        self.CR_depth=0
+        self.CR_depth=50
         self.Area=area
         self.search_size=20
         self.next_neutrons=1
@@ -812,7 +812,7 @@ class GridCell:
         if self.Area is None:
             return
         self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density))
-        reaction=self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass
+        reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
         self.next_neutrons+=(self.neutron*k)*dt
@@ -822,15 +822,13 @@ class GridCell:
         base_temp=self.temp
         for n in self.neighbors:
             if self.neutron>=n.neutron:
-                new_neutrons,_=heat_exchange(self.neutron,n.neutron,100,dt)
+                new_neutrons,_=heat_exchange(self.neutron,n.neutron,1,dt)
             else:
-                _,new_neutrons=heat_exchange(n.neutron,self.neutron,100,dt)
-            self.next_neutrons += new_neutrons - base_neutron
+                _,new_neutrons=heat_exchange(n.neutron,self.neutron,1,dt)
             if self.temp>=n.temp:
-                _,new_temp=heat_exchange(self.temp,n.temp,100,dt)
+                _,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate,dt)
             else:
-                _,new_temp=heat_exchange(n.temp,self.temp,100,dt)
-            self.next_temp += new_temp-base_temp
+                _,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate,dt)
         self.next_temp=lerp(self.next_temp,20,1-self.core.water_mass)
         self.next_temp=max(20,self.next_temp)
 class Reactor:
@@ -903,7 +901,6 @@ grid_origin_y=50
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
-circ_water=0
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
