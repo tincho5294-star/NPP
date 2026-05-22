@@ -485,7 +485,7 @@ class Knob:
         rr=(self.radius+self.hitpad)**2
         return (mx-self.x)**2+(my-self.y)**2<=rr
 class Throttle:
-    def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=50):
+    def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=100):
         self.x, self.y, self.name = x, y, name
         self.vmin, self.vmax = vmin, vmax
         self.w, self.h = w, h
@@ -777,7 +777,7 @@ class GridCell:
         self.void_coeff=0
         self.color=(0,255,0)
         self.neighbors=[]
-        self.CR_depth=50
+        self.CR_depth=100
         self.Area=area
         self.search_size=20
         self.next_neutrons=1
