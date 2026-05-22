@@ -818,8 +818,6 @@ class GridCell:
         self.next_neutrons+=(self.neutron*k)*dt
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
-        base_neutron=self.neutron
-        base_temp=self.temp
         for n in self.neighbors:
             if self.neutron>=n.neutron:
                 new_neutrons,_=heat_exchange(self.neutron,n.neutron,1,dt)
