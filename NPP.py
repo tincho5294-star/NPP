@@ -820,18 +820,19 @@ class GridCell:
         self.uranium_mass*=burn_rate**(reaction*dt)
         for n in self.neighbors:
             if self.neutron>=n.neutron:
-                new_neutrons,_=heat_exchange(self.neutron,n.neutron,1,dt)
+                new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
             else:
-                _,new_neutrons=heat_exchange(n.neutron,self.neutron,1,dt)
+                n.new_neutrons,new_neutrons=heat_exchange(n.neutron,self.neutron,1,dt)
             if self.temp>=n.temp:
-                _,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate,dt)
+                n.new_temp,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
             else:
-                _,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate,dt)
-        self.next_temp=lerp(self.next_temp,20,1-self.core.water_mass)
+                n.new_temp,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
         self.next_temp=max(20,self.next_temp)
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.water_temp=20
         self.avg_temp=20
         self.avg_xenon=0
         self.void_coeff=0
@@ -862,14 +863,14 @@ class Reactor:
         self.pressure=new_pressure
         self.boiling_point=300+self.pressure*3.5
         boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
-        max_saturation = (0.00001 * (self.avg_temp ** 2) + 0.00033 * self.avg_temp + 0.01) * self.water_mass
+        max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        self.water_level=(self.water_mass*self.avg_temp)/500
+        self.water_level=(self.water_mass*self.water_temp)/500
         self.water_level=clamp(self.water_level,0,1)
         self.water_density=safe_div(self.water_mass,self.water_level)
         self.water_mass+=(knobs[8].value*0.001)*dt
