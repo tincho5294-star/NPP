@@ -762,8 +762,8 @@ class Computer:
             screen.blit(label,(x,y+h-18))
             screen.set_clip(old_clip)
 class GridCell:
-    def __init__(self,x,y,ix,iy,area):
-        self.core=Reactor()
+    def __init__(self,x,y,ix,iy,area,core):
+        self.core=core
         self.x=x
         self.y=y
         self.next_temp=20
@@ -812,7 +812,7 @@ class GridCell:
         if self.Area is None:
             return
         self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density))
-        reaction=self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*(1.0-self.core.water_mass)
+        reaction=self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
         self.next_neutrons+=(self.neutron*k)*dt
@@ -834,7 +834,8 @@ class GridCell:
         self.next_temp=lerp(self.next_temp,20,1-self.core.water_mass)
         self.next_temp=max(20,self.next_temp)
 class Reactor:
-    def __init__(self):
+    def __init__(self,name):
+        self.name=name
         self.avg_temp=20
         self.avg_xenon=0
         self.void_coeff=0
@@ -884,9 +885,16 @@ class Reactor:
         if self.circ_water_mass>0:
             self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
         self.boron_conc=max(0,self.boron_conc)
+class Pump:
+    def __init__(self):
+        self.force=0
+        self.toggle=False
+    def update(self):
+        self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 current_control_panel=1
+reactor=Reactor("default")
 grid=[]
 grid_size=20
 cell_size=10
@@ -908,8 +916,8 @@ for iy in range(grid_size):
             area=sector_names[sector_index]
         else:
             area=None
-        cell=GridCell(x,y,ix,iy,area)
-        if area is not None:
+        cell=GridCell(x,y,ix,iy,area,reactor)
+        if area is None:
             cell.uranium_mass=0.0
             cell.neutron=0.0
         row.append(cell)
@@ -923,7 +931,6 @@ screen = pygame.display.set_mode((800, 600))
 pygame.display.set_caption("Knob Test")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont(None, 24)
-reactor=Reactor()
 sm=StyleManager()
 knobs=[
     Knob(300,400, "Heater", value=0, radius=40, _type=2),
