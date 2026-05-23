@@ -1021,6 +1021,5 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(all_cells)
 pygame.quit()
 sys.exit()
