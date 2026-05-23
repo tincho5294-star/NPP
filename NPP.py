@@ -860,7 +860,6 @@ class Reactor:
             self.max_pressure=20
             pressure=lerp(self.pressure,self.max_pressure,((self.heater/100)+((self.fine_heater/100)/2))*0.05*dt)
             new_pressure=lerp(pressure,15,((self.sprinkler/100)+((self.fine_sprinkler/100)/2))*0.05*dt)
-        self.avg_temp=cell_temp_total/all_cells
         self.pressure=new_pressure
         self.boiling_point=300+self.pressure*3.5
         boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
