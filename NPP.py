@@ -814,10 +814,10 @@ class GridCell:
         self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density))
         reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.001)+(self.xenon*0.5))
+        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
         self.next_neutrons+=(self.neutron*k)*dt
         self.next_temp=self.temp+(reaction*dt)
-        self.uranium_mass*=burn_rate**(reaction*dt)
+        self.uranium_mass*=clamp(burn_rate**(reaction*dt),0,1e33)
         for n in self.neighbors:
             if self.neutron>=n.neutron:
                 new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
@@ -1018,5 +1018,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
+    print(reactor.water_temp)
 pygame.quit()
 sys.exit()
