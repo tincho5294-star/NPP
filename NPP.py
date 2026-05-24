@@ -811,7 +811,7 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        self.neutron_speed*=((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density))
+        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density)),dt)
         reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
