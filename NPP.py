@@ -883,7 +883,7 @@ class Pump:
     def update(self):
         self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
 cell_temp_total=0
-all_cells=0
+all_cell_temp=[]
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 current_control_panel=1
@@ -967,7 +967,7 @@ while running:
                 for button in buttons:
                     if button.name in AREA_BUTTON_NAMES:
                         button.toggle = True
-
+    all_cell_temp.clear()
     for row in grid:
         for cell in row:
             cell.update()
@@ -980,11 +980,17 @@ while running:
         button.update()
 
     screen.fill((60, 60, 60))
-
+    for row in grid:
+        for cell in row:
+            if cell.Area is not None:
+                all_cell_temp.append(cell.temp)
+            cell_temp_total=sum(all_cell_temp)
+            reactor.avg_temp=cell_temp_total/208
     for row in grid:
         for cell in row:
             cell.get_color()
             cell.draw(screen)
+    reactor.avg_temp=cell_temp_total/208
     selected_area.clear()
     for button in buttons:
         button.draw(screen)
@@ -1014,5 +1020,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
+    print(reactor.avg_temp)
 pygame.quit()
 sys.exit()
