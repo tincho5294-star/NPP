@@ -815,7 +815,7 @@ class GridCell:
         reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
-        self.next_neutrons+=(self.neutron*k)*dt
+        self.next_neutrons=lerp(self.next_neutrons,self.next_neutrons*k,dt)
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=clamp(burn_rate**(reaction*dt),0,1e33)
         for n in self.neighbors:
