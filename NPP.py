@@ -209,7 +209,7 @@ class StyleManager:
         self.current_rank=None
         self.style_multiplier = 1
         self.rank_dur = 100
-        self.rank_decay_rate = 0.995
+        self.rank_decay_rate = 0.999
         self.visual_t = 0
         self.max_display = 7
     def add_style_log(self, style_entry, timer=5):
@@ -817,7 +817,11 @@ class GridCell:
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
         self.next_neutrons=lerp(self.next_neutrons,self.next_neutrons*k,dt)
         self.next_temp=self.temp+(reaction*dt)
-        self.uranium_mass*=clamp(burn_rate**(reaction*dt),0,1e33)
+        try:
+            self.uranium_mass*=burn_rate**(reaction*dt)
+        except OverflowError:
+            self.uranium_mass*=1e-33
+        
         for n in self.neighbors:
             new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
             n.new_temp,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
@@ -882,6 +886,11 @@ class Pump:
         self.toggle=False
     def update(self):
         self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
+class SteamGenerator:
+    def __init__(self):
+        self.pressure=1
+        self.water_mass=1
+        self.steam_valve=0
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
