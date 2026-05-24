@@ -819,14 +819,8 @@ class GridCell:
         self.next_temp=self.temp+(reaction*dt)
         self.uranium_mass*=clamp(burn_rate**(reaction*dt),0,1e33)
         for n in self.neighbors:
-            if self.neutron>=n.neutron:
-                new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
-            else:
-                n.new_neutrons,new_neutrons=heat_exchange(n.neutron,self.neutron,1,dt)
-            if self.temp>=n.temp:
-                n.new_temp,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
-            else:
-                n.new_temp,new_temp=heat_exchange(n.temp,self.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
+            new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
+            n.new_temp,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
         self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,(0.1+(self.core.coolant_flow_rate*0.9))*self.core.water_mass,dt)
         self.next_temp=max(20,self.next_temp)
 class Reactor:
