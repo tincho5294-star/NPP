@@ -809,22 +809,26 @@ class GridCell:
         pygame.draw.rect(screen,(30,30,30),(self.x,self.y,w,h))
         pygame.draw.rect(screen,self.color,(self.x,self.y,w-2,h-2))
     def update(self):
+        for n in self.neighbors:
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
         if self.Area is None:
             return
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
+        reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed))*0.2
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
-        self.next_neutrons=lerp(self.next_neutrons,self.next_neutrons*k,dt)
+        self.next_neutrons=lerp(self.next_neutrons,self.neutron*k,dt)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1000000)
         self.next_temp=self.temp+(reaction*dt)
+        for n in self.neighbors:
+            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,0.005,dt)
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         try:
@@ -834,13 +838,14 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.1*((0.1+(self.core.coolant_flow_rate*0.9))*self.core.water_mass),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.05*((self.core.coolant_flow_rate)*self.core.water_mass),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         self.next_temp=max(20,self.next_temp)
+        self.neutron=self.next_neutrons
+        self.temp=self.next_temp
 class Reactor:
     def __init__(self,name):
         self.name=name
@@ -1000,10 +1005,6 @@ while running:
         for cell in row:
             cell.update()
 
-    for row in grid:
-        for cell in row:
-            cell.neutron=cell.next_neutrons
-            cell.temp=cell.next_temp
     for button in buttons:
         button.update()
 
