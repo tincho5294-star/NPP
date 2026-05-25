@@ -812,20 +812,34 @@ class GridCell:
         if self.Area is None:
             return
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density)),dt)
+        if not math.isfinite(self.neutron_speed):
+            self.neutron_speed=0.2
+        self.neutron_speed=clamp(self.neutron_speed,0,1.3)
         reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed)*self.core.water_mass)*0.2
+        if not math.isfinite(reaction):
+            reaction=0
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
         self.next_neutrons=lerp(self.next_neutrons,self.next_neutrons*k,dt)
+        if not math.isfinite(self.next_neutrons):
+            self.next_neutrons=1
+        self.next_neutrons=clamp(self.next_neutrons,0,1000000)
         self.next_temp=self.temp+(reaction*dt)
+        if not math.isfinite(self.next_temp):
+            self.next_temp=self.temp
         try:
             self.uranium_mass*=burn_rate**(reaction*dt)
         except OverflowError:
             self.uranium_mass*=1e-33
+        if not math.isfinite(self.uranium_mass):
+            self.uranium_mass=0
+        self.uranium_mass=clamp(self.uranium_mass,0,3.5)
         
-        for n in self.neighbors:
-            new_neutrons,n.new_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
-            n.new_temp,new_temp=heat_exchange(self.temp,n.temp,self.core.coolant_flow_rate*self.core.water_mass,dt)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,(0.1+(self.core.coolant_flow_rate*0.9))*self.core.water_mass,dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.1*((0.1+(self.core.coolant_flow_rate*0.9))*self.core.water_mass),dt)
+        if not math.isfinite(self.core.water_temp):
+            self.core.water_temp=20
+        if not math.isfinite(self.next_temp):
+            self.next_temp=self.temp
         self.next_temp=max(20,self.next_temp)
 class Reactor:
     def __init__(self,name):
@@ -873,12 +887,17 @@ class Reactor:
         self.water_density=safe_div(self.water_mass,self.water_level)
         self.water_mass+=(knobs[8].value*0.001)*dt
         self.water_mass-=(knobs[9].value*0.001)*dt
+        if not math.isfinite(self.water_mass):
+            self.water_mass=1
+        self.water_mass=clamp(self.water_mass,0,10)
         self.circ_water_mass+=(knobs[9].value*0.001)*dt
         self.circ_water_mass-=(knobs[8].value*0.001)*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,1)
         self.water_density=clamp(self.water_density,0,1)
         if self.circ_water_mass>0:
             self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
+        if not math.isfinite(self.boron_conc):
+            self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
 class Pump:
     def __init__(self):
