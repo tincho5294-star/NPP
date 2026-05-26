@@ -402,7 +402,7 @@ class Knob:
                     ix=self.x+cos(math.radians(i))*14
                     iy=self.y-sin(math.radians(i))*14
                     value_t=(i-(self.amin_1+180))/((self.amax+180)-(self.amin_1+180)
-                    i_value=lerp((amin_1+180),(amax_2+180),value_t)
+                    i_value=lerp(0,100,value_t)
                     value_text=dial_font.render(str(i_value),True,(175,175,175))
                     screen.blit(value_text,(ix,iy))
                     pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
@@ -437,8 +437,12 @@ class Knob:
         elif self._type==2:
             for i in range(self.amin_2+180,(self.amax_2+180)+1):
                 if i%10==0:
+                    value_t=(i-(self.amin_2+180))/((self.amax_2+180)-(self.amin_2+180))
+                    i_value=lerp(0,100,value_t)
+                    value_text=dial_font.render(str(i_value),True,(175,175,175))
                     ix=self.x+cos(math.radians(i))*14
                     iy=self.y-sin(math.radians(i))*14
+                    screen.blit(value_text,(ix,iy))
                     pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
             ang = math.radians(self.value_to_angle(self.value))
