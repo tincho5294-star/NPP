@@ -399,9 +399,9 @@ class Knob:
                 ang_deg=math.degrees(ang)
             for i in range(self.amin_1+180,(self.amax_1+180)+1):
                 if i%10==0:
-                    ix=self.x+cos(math.radians(i))*14
-                    iy=self.y-sin(math.radians(i))*14
-                    value_t=(i-(self.amin_1+180))/((self.amax+180)-(self.amin_1+180)
+                    ix=self.x+math.cos(math.radians(normalize360(i)))*14
+                    iy=self.y-math.sin(math.radians(normalize360(i)))*14
+                    value_t=(i-(self.amin_1+180))/(self.amax+180)-(self.amin_1+180)
                     i_value=lerp(0,100,value_t)
                     value_text=dial_font.render(str(i_value),True,(175,175,175))
                     screen.blit(value_text,(ix,iy))
@@ -440,8 +440,8 @@ class Knob:
                     value_t=(i-(self.amin_2+180))/((self.amax_2+180)-(self.amin_2+180))
                     i_value=lerp(0,100,value_t)
                     value_text=dial_font.render(str(i_value),True,(175,175,175))
-                    ix=self.x+cos(math.radians(i))*14
-                    iy=self.y-sin(math.radians(i))*14
+                    ix=self.x+math.cos(math.radians(normalize360(i)))*14
+                    iy=self.y-math.sin(math.radians(normalize360(i)))*14
                     screen.blit(value_text,(ix,iy))
                     pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
