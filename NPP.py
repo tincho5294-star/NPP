@@ -283,7 +283,7 @@ class StyleManager:
 
         draw_text(f"x{self.style_multiplier:.2f}", style_font, m_color, screen, draw_x + 5, draw_y + h - 25)
 class Knob:
-    def __init__(self,x,y,name,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False):
+    def __init__(self,x,y,name,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False): 
         self.x=x
         self.y=y
         self.name=name
@@ -397,15 +397,6 @@ class Knob:
             else:
                 ang=self.last_switch_angle
                 ang_deg=math.degrees(ang)
-            for i in range(self.amin_1+180,(self.amax_1+180)+1):
-                if i%10==0:
-                    ix=self.x+math.cos(math.radians(normalize360(i)))*14
-                    iy=self.y-math.sin(math.radians(normalize360(i)))*14
-                    value_t=(i-(self.amin_1+180))/(self.amax+180)-(self.amin_1+180)
-                    i_value=lerp(0,100,value_t)
-                    value_text=dial_font.render(str(i_value),True,(175,175,175))
-                    screen.blit(value_text,(ix,iy))
-                    pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
             finx=self.x+math.cos(math.radians(self.amax_1))*self.radius
             finy=self.y-math.sin(math.radians(self.amax_1))*self.radius
@@ -435,15 +426,13 @@ class Knob:
             self.off_marker.draw(screen)
 
         elif self._type==2:
-            for i in range(self.amin_2+180,(self.amax_2+180)+1):
-                if i%10==0:
-                    value_t=(i-(self.amin_2+180))/((self.amax_2+180)-(self.amin_2+180))
-                    i_value=lerp(0,100,value_t)
-                    value_text=dial_font.render(str(i_value),True,(175,175,175))
-                    ix=self.x+math.cos(math.radians(normalize360(i)))*14
-                    iy=self.y-math.sin(math.radians(normalize360(i)))*14
-                    screen.blit(value_text,(ix,iy))
-                    pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
+            for i in range(self.amin_2-60,(self.amax_2+60)-1,15):
+                value_t=(i-(self.amin_2))/((self.amin_2+360)-(self.amax_2))
+                i_value=int(lerp(0,100,value_t))
+                value_text=dial_font.render(str(i_value),True,(175,175,175))
+                ix=self.x-math.cos(math.radians(normalize360(i)))*25
+                iy=self.y+math.sin(math.radians(normalize360(i)))*25
+                pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
             ang = math.radians(self.value_to_angle(self.value))
             ang_deg=math.degrees(ang)
