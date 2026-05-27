@@ -426,12 +426,13 @@ class Knob:
             self.off_marker.draw(screen)
 
         elif self._type==2:
-            for i in range(self.amax_2-180,(self.amin_2+180)+1,60):
+            for i in range(self.amax_2-180,(self.amin_2+180)+1,40):
                 value_t=(i-(self.amax_2-180))/((self.amin_2+360)-(self.amax_2))
                 i_value=int(lerp(0,100,value_t))
-                value_text=dial_font.render(str(i_value),True,(175,175,175))
+                value_text=dial_font.render(str(round(i_value,0)),True,(175,175,175))
                 ix=self.x-math.cos(math.radians(normalize360(i)))*25
                 iy=self.y+math.sin(math.radians(normalize360(i)))*25
+                screen.blit(value_text,(ix,iy))
                 pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
             ang = math.radians(self.value_to_angle(self.value))
