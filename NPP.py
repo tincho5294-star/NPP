@@ -831,7 +831,7 @@ class GridCell:
         pygame.draw.rect(screen,self.color,(self.x,self.y,w-2,h-2))
     def update(self):
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.neutron,n.neutron,1,dt)
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,dt)
         if self.Area is None:
             return
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density)),dt)
