@@ -430,10 +430,21 @@ class Knob:
                 value_t=(i-(self.amax_2-180))/((self.amin_2+360)-(self.amax_2))
                 i_value=int(lerp(0,100,value_t))
                 value_text=dial_font.render(str(round(i_value,0)),True,(175,175,175))
-                ix=self.x-math.cos(math.radians(normalize360(i)))*25
-                iy=self.y+math.sin(math.radians(normalize360(i)))*25
-                screen.blit(value_text,(ix+(10 if i_value<=50 else -10),iy-14))
+                ix=self.x-math.cos(math.radians(normalize360(i)))*28
+                iy=self.y+math.sin(math.radians(normalize360(i)))*28
+                if i_value<50:
+                    screen.blit(value_text,(ix+10,iy-14))
+                elif i_value==50:
+                    screen.blit(value_text,(ix+5,iy-14))
+                elif i_value==100:
+                    screen.blit(value_text,(ix-20,iy-14))
+                else:
+                    screen.blit(value_text,(ix-10,iy-14))
                 pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
+            for si in range(self.amax_2-180,(self.amin_2+180)+1,15):
+                six=self.x-math.cos(math.radians(normalize360(si)))*15
+                siy=self.y+math.sin(math.radians(normalize360(si)))*15
+                pygame.draw.line(screen,(175,175,175),(self.x,self.y),(six,siy))
             pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
             ang = math.radians(self.value_to_angle(self.value))
             ang_deg=math.degrees(ang)
