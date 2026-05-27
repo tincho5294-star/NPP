@@ -426,8 +426,8 @@ class Knob:
             self.off_marker.draw(screen)
 
         elif self._type==2:
-            for i in range(self.amin_2-60,(self.amax_2+60)-1,15):
-                value_t=(i-(self.amin_2-60))/((self.amin_2+360)-(self.amax_2))
+            for i in range(self.amax_2-180,(self.amin_2+180)+1,((self.amax_2-180)-(self.amin_2+180))/4):
+                value_t=(i-(self.amax_2-180))/((self.amin_2+360)-(self.amax_2))
                 i_value=int(lerp(0,100,value_t))
                 value_text=dial_font.render(str(i_value),True,(175,175,175))
                 ix=self.x-math.cos(math.radians(normalize360(i)))*25
