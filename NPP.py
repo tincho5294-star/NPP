@@ -859,7 +859,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.05*((self.core.coolant_flow_rate)*self.core.water_mass),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.05*((self.core.coolant_flow_rate)*((self.core.water_mass*(1.0-self.core.water_mass)))),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -870,6 +870,7 @@ class GridCell:
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.pressurizer_temp=20
         self.water_temp=20
         self.avg_temp=20
         self.avg_xenon=0
@@ -891,15 +892,11 @@ class Reactor:
         self.circ_water_mass=0
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
-        if self.boiling:
-            self.max_pressure=math.inf
-            new_pressure = lerp(self.pressure, self.pressure * 7, 0.01*(self.avg_temp/100))
-        else:
-            self.max_pressure=20
-            pressure=lerp(self.pressure,self.max_pressure,((self.heater/100)+((self.fine_heater/100)/2))*0.05*dt)
-            new_pressure=lerp(pressure,15,((self.sprinkler/100)+((self.fine_sprinkler/100)/2))*0.05*dt)
-        self.pressure=new_pressure
-        self.boiling_point=300+self.pressure*3.5
+        self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler))
+        #self.pressure=new_pressure
+        #^
+        #| i actually got no time to fix this so i skipped it with some comments LMAO
+        self.boiling_point=300+self.pressure*(50/self.max_pressure)
         boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
@@ -932,10 +929,15 @@ class Pump:
     def update(self):
         self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
 class SteamGenerator:
-    def __init__(self):
-        self.pressure=1
+    def __init__(self,core):
+        self.core=core
+        self.water_temp=20
+        self.pressure=7
         self.water_mass=1
+        self.water_flow=0
         self.steam_valve=0
+    def update(self):
+        self.water_temp,self.core.water_temp=heat_exchange(self.water_temp,self.core.water_temp,self.water_flow*(self.water_mass*(1-self.water_mass)),dt)
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
