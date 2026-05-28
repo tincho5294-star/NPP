@@ -892,11 +892,6 @@ class Reactor:
         self.circ_water_mass=0
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
-        self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler))
-        #self.pressure=new_pressure
-        #^
-        #| i actually got no time to fix this so i skipped it with some comments LMAO
-        self.boiling_point=300+self.pressure*(50/self.max_pressure)
         boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
@@ -922,6 +917,8 @@ class Reactor:
         if not math.isfinite(self.boron_conc):
             self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
+        self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
+        self.pressure=10**((self.pressurizer_temp+self.water_temp)/800)
 class Pump:
     def __init__(self):
         self.force=0
