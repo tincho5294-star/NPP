@@ -892,7 +892,8 @@ class Reactor:
         self.circ_water_mass=0
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
-        boron_t=abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05
+        circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
+        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05)*circ_flow
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
@@ -912,8 +913,7 @@ class Reactor:
         self.circ_water_mass-=(knobs[8].value*0.001)*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,1)
         self.water_density=clamp(self.water_density,0,1)
-        if self.circ_water_mass>0:
-            self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
+        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
         if not math.isfinite(self.boron_conc):
             self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
@@ -1069,6 +1069,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.avg_temp)
+    print(reactor.boron_conc)
 pygame.quit()
 sys.exit()
