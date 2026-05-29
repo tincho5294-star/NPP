@@ -926,15 +926,31 @@ class Pump:
     def update(self):
         self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
 class SteamGenerator:
-    def __init__(self,core):
+    def __init__(self,core,turbine,name):
+        self.name=name
         self.core=core
+        self.turbine=turbine
         self.water_temp=20
         self.pressure=7
         self.water_mass=1
         self.water_flow=0
         self.steam_valve=0
+        self.steam=0
+        self.boiling_point=0
     def update(self):
         self.water_temp,self.core.water_temp=heat_exchange(self.water_temp,self.core.water_temp,self.water_flow*(self.water_mass*(1-self.water_mass)),dt)
+        self.pressure=10**(self.water_temp/200)
+class Turbine:
+    def __init__(self,SteamGenerator):
+        self.SteamGenerator=SteamGenerator
+        self.steam=0
+        self.pressure=0
+        self.steam_temp=0
+        self.force=0
+    def update(self):
+        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.005+self.SteamGenerator.steam_valve/(100-0.005),dt)
+        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve/90,dt)
+        self.force=lerp(self.force,(self.steam*self.pressure*self.steam_temp)/200,dt)
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
