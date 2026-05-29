@@ -918,7 +918,7 @@ class Reactor:
             self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
-        self.pressure=10**((self.pressurizer_temp+self.water_temp)/800)
+        self.pressure=10**((self.pressurizer_temp+self.water_temp)/500)
 class Pump:
     def __init__(self):
         self.force=0
