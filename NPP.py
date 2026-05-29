@@ -859,7 +859,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.1*((self.core.coolant_flow_rate)*((self.core.water_mass*(1.0-(self.core.water_mass*0.9))))),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.5*((self.core.coolant_flow_rate)*((self.core.water_mass*(1.0-(self.core.water_mass*0.9))))),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
