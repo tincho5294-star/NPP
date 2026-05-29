@@ -893,7 +893,7 @@ class Reactor:
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
         circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
-        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(self.coolant_flow_rate/100)*(knobs[8].value/100)*dt*0.05)*circ_flow
+        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(0.01+self.coolant_flow_rate/(100-0.01))*(knobs[8].value/100)*dt*0.05)*circ_flow
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
