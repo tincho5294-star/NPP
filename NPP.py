@@ -1,4 +1,5 @@
-﻿import pygame
+﻿#lil goofy school project ahh looking project
+import pygame
 import time
 import sys
 import math
@@ -842,7 +843,7 @@ class GridCell:
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.05)+(self.xenon*0.5))
+        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1)+(self.xenon*0.5))
         self.next_neutrons=lerp(self.next_neutrons,self.neutron*k,dt)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
