@@ -205,7 +205,7 @@ class StyleManager:
             {"name": "JUGGLE", "score": 25}
         ]
         self.earned_style = 0
-        self.style_rank = ["DULL","CRITICAL","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","XTREME"]
+        self.style_rank = ["DULL","CRITICAL","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","NUCLEAR"]
         self.current_rank=None
         self.style_multiplier = 1
         self.rank_dur = 100
@@ -859,7 +859,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.5*((self.core.coolant_flow_rate)*((self.core.water_mass*(1.0-(self.core.water_mass*0.9))))),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+((self.core.water_mass*(1.0-(self.core.water_mass*0.9))))),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -893,7 +893,7 @@ class Reactor:
     def update(self):
         self.boiling=self.avg_temp>self.boiling_point
         circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
-        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(0.01+self.coolant_flow_rate/(100-0.01))*(knobs[8].value/100)*dt*0.05)*circ_flow
+        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(0.01+self.coolant_flow_rate*(100-0.01))*(knobs[8].value/100)*dt*0.05)*circ_flow
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
@@ -931,26 +931,29 @@ class SteamGenerator:
         self.core=core
         self.turbine=turbine
         self.water_temp=20
-        self.pressure=7
+        self.pressure=6
+        self.steam_mass=0
         self.water_mass=1
         self.water_flow=0
         self.steam_valve=0
         self.steam=0
         self.boiling_point=0
     def update(self):
+        self.pressure=10**((self.water_temp*(0.1+self.steam*0.9))/250)
         self.water_temp,self.core.water_temp=heat_exchange(self.water_temp,self.core.water_temp,self.water_flow*(self.water_mass*(1-self.water_mass)),dt)
-        self.pressure=10**(self.water_temp/200)
 class Turbine:
     def __init__(self,SteamGenerator):
         self.SteamGenerator=SteamGenerator
         self.steam=0
         self.pressure=0
         self.steam_temp=0
-        self.force=0
+        self.RPM=0
+        self.total_generation=0
+        self.generation=0
     def update(self):
-        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.005+self.SteamGenerator.steam_valve/(100-0.005),dt)
-        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve/90,dt)
-        self.force=lerp(self.force,(self.steam*self.pressure*self.steam_temp)/200,dt)
+        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.005+self.SteamGenerator.steam_valve*(100-0.005),dt)
+        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve*0.9,dt)
+        self.RPM=lerp(self.RPM,(self.steam*self.pressure*self.steam_temp)/400,dt)
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
