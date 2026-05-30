@@ -871,6 +871,7 @@ class GridCell:
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.precipitated_boron=0
         self.pressurizer_temp=20
         self.water_temp=20
         self.avg_temp=20
@@ -915,6 +916,7 @@ class Reactor:
         self.circ_water_mass=clamp(self.circ_water_mass,0,1)
         self.water_density=clamp(self.water_density,0,1)
         self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
+        self.precipitated_boron=self.boron_conc*(self.boron_conc/self.water_mass)
         if not math.isfinite(self.boron_conc):
             self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
