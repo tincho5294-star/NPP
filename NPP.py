@@ -909,7 +909,7 @@ class Reactor:
         self.water_mass-=(knobs[9].value*0.001)*dt
         if not math.isfinite(self.water_mass):
             self.water_mass=1
-        self.water_mass=clamp(self.water_mass,0,10)
+        self.water_mass=clamp(self.water_mass,0,1)
         self.circ_water_mass+=(knobs[9].value*0.001)*dt
         self.circ_water_mass-=(knobs[8].value*0.001)*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,1)
@@ -1089,6 +1089,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.boron_conc)
+    print(reactor.water_mass)
 pygame.quit()
 sys.exit()
