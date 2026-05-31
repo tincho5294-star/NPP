@@ -912,7 +912,7 @@ class Reactor:
         self.circ_water_mass-=(450*(knobs[8].value/100))*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,250)
 
-        self.water_level=(self.water_mass*(self.water_temp-19))
+        self.water_level=(self.water_mass+(self.water_temp/20)
         self.water_level=clamp(self.water_level,0,7000)
 
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
@@ -930,7 +930,7 @@ class Reactor:
         self.water_density=safe_div(self.water_mass,self.water_level)
         self.water_density=clamp(self.water_density,0,1)
 
-        self.precipitating_rate=min(1,self.boron_conc*safe_div(self.boron_conc,(self.water_level/7000)))
+        self.precipitating_rate=min(1,self.boron_conc*safe_div(self.boron_conc,(self.water_density)))
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
         self.pressure=10**((self.pressurizer_temp+self.water_temp)/500)
