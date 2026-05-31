@@ -835,7 +835,7 @@ class GridCell:
             self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.03,dt)
         if self.Area is None:
             return
-        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-(self.core.water_level*0.1))*(1.85-self.core.water_density)),dt)
+        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.core.water_level/7000)*0.1))*(1.85-self.core.water_density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
@@ -860,7 +860,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+((self.core.water_mass*(1.0-(self.core.water_mass*0.9))))),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+(((self.core.water_mass/7000)*(1.0-((self.core.water_mass/7000)*0.9))))),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -871,7 +871,9 @@ class GridCell:
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.boron=0
         self.precipitated_boron=0
+        self.precipitating_rate=0
         self.pressurizer_temp=20
         self.water_temp=20
         self.avg_temp=20
@@ -888,40 +890,52 @@ class Reactor:
         self.max_pressure=20
         self.boiling_point=300
         self.boiling=False
-        self.water_level=1
-        self.water_mass=1
+        self.water_level=7000
+        self.water_mass=7000
         self.water_density=0
         self.circ_water_mass=0
     def update(self):
-        self.boiling=self.avg_temp>self.boiling_point
-        circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
-        boron_t=(abs((knobs[5].value/100)-(knobs[6].value/100))*(0.01+(self.coolant_flow_rate/100)*(1-0.01))*(knobs[8].value/100)*dt*0.05)*circ_flow
-        max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
-        max_saturation=clamp(max_saturation,0,1)
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
         self.fine_heater=knobs[1].value
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
-        self.water_level=(self.water_mass*self.water_temp)/500
-        self.water_level=clamp(self.water_level,0,1)
-        self.water_density=safe_div(self.water_mass,self.water_level)
-        self.water_mass+=(knobs[8].value*0.001)*dt
-        self.water_mass-=(knobs[9].value*0.001)*dt
+        circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
+
+        self.water_mass+=450*(knobs[8].value/100)*dt
+        self.water_mass-=450*(knobs[9].value/100)*dt
         if not math.isfinite(self.water_mass):
             self.water_mass=1
-        self.water_mass=clamp(self.water_mass,0,1)
-        self.circ_water_mass+=(knobs[9].value*0.001)*dt
-        self.circ_water_mass-=(knobs[8].value*0.001)*dt
-        self.circ_water_mass=clamp(self.circ_water_mass,0,1)
-        self.water_density=clamp(self.water_density,0,1)
-        self.boron_conc = lerp(self.boron_conc,max_saturation if knobs[5].value>=knobs[6].value else 0,(boron_t*(1.3-self.water_density)))
-        self.precipitated_boron=self.boron_conc*(self.boron_conc/self.water_mass)
+        self.water_mass=clamp(self.water_mass,0,7000)
+
+        self.circ_water_mass+=(450*(knobs[9].value/100))*dt
+        self.circ_water_mass-=(450*(knobs[8].value/100))*dt
+        self.circ_water_mass=clamp(self.circ_water_mass,0,250)
+
+        self.water_level=(self.water_mass*(self.water_temp-19))
+        self.water_level=clamp(self.water_level,0,7000)
+
+        max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
+        max_saturation=clamp(max_saturation,0,1)
+
+        self.boron+=circ_flow*(knobs[8].value-knobs[9].value)*(1-self.precipitating_rate)-(((7000*max_saturation)-(self.boron))*dt)
+        self.precipitated_boron+=(circ_flow*(knobs[8].value-knobs[9].value)*(self.precipitating_rate))+(((7000*max_saturation)-(self.boron))*dt)
+        self.boron=clamp(self.boron,0,7000)
+
+        self.boron_conc=self.boron/self.water_mass
         if not math.isfinite(self.boron_conc):
             self.boron_conc=0
         self.boron_conc=max(0,self.boron_conc)
+
+        self.water_density=safe_div(self.water_mass,self.water_level)
+        self.water_density=clamp(self.water_density,0,1)
+
+        self.precipitating_rate=min(1,self.boron_conc*safe_div(self.boron_conc,(self.water_level/7000)))
+
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
         self.pressure=10**((self.pressurizer_temp+self.water_temp)/500)
+        self.boiling=self.avg_temp>self.boiling_point
+
 class Pump:
     def __init__(self):
         self.force=0
@@ -1091,6 +1105,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.water_mass)
+    print(reactor.water_temp)
 pygame.quit()
 sys.exit()
