@@ -873,7 +873,6 @@ class Reactor:
         self.name=name
         self.boron=0
         self.precipitated_boron=0
-        self.precipitating_rate=0
         self.pressurizer_temp=20
         self.water_temp=20
         self.avg_temp=20
@@ -918,8 +917,8 @@ class Reactor:
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
 
-        self.boron+=circ_flow*(knobs[8].value-knobs[9].value)*(1-self.precipitating_rate)-(((7000*max_saturation)-(self.boron))*dt)
-        self.precipitated_boron+=(circ_flow*(knobs[8].value-knobs[9].value)*(self.precipitating_rate))+(((7000*max_saturation)-(self.boron))*dt)
+        self.boron+=circ_flow*(knobs[8].value-knobs[9].value)*(1-self.boron_conc)-(((7000*max_saturation)-(self.boron))*dt)
+        self.precipitated_boron+=(circ_flow*(knobs[8].value-knobs[9].value)*(self.boron_conc))+(((7000*max_saturation)-(self.boron))*dt)
         self.boron=clamp(self.boron,0,7000)
 
         self.boron_conc=self.boron/self.water_mass
@@ -930,7 +929,6 @@ class Reactor:
         self.water_density=safe_div(self.water_mass,self.water_level)
         self.water_density=clamp(self.water_density,0,1)
 
-        self.precipitating_rate=min(1,safe_div(self.boron_conc,self.water_density))
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
         self.pressure=10**((self.pressurizer_temp+self.water_temp)/500)
