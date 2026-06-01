@@ -917,8 +917,8 @@ class Reactor:
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
         max_saturation=clamp(max_saturation,0,1)
 
-        self.boron+=circ_flow*(knobs[8].value-knobs[9].value)*(1-self.boron_conc)-(((7000*max_saturation)-(self.boron))*dt)
-        self.precipitated_boron+=(circ_flow*(knobs[8].value-knobs[9].value)*(self.boron_conc))+(((7000*max_saturation)-(self.boron))*dt)
+        self.boron+=circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc)-(((7000*max_saturation)-(self.boron))*dt)
+        self.precipitated_boron+=(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((7000*max_saturation)-(self.boron))*dt)
         self.boron=clamp(self.boron,0,7000)
 
         self.boron_conc=self.boron/self.water_mass
