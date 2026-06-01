@@ -912,7 +912,7 @@ class Reactor:
         self.circ_water_mass-=(450*(knobs[8].value/100))*dt
         self.circ_water_mass=clamp(self.circ_water_mass,0,250)
 
-        self.water_level=(self.water_mass*(self.water_temp-19))
+        self.water_level=(self.water_mass+(self.water_temp/20))
         self.water_level=clamp(self.water_level,0,7000)
 
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * self.water_mass
