@@ -930,7 +930,7 @@ class Reactor:
         self.water_density=safe_div(self.water_mass,self.water_level)
         self.water_density=clamp(self.water_density,0,1)
 
-        self.precipitating_rate=min(1,self.boron_conc*safe_div(self.boron_conc,(self.water_level/7000)))
+        self.precipitating_rate=min(1,safe_div(self.boron_conc,self.water_density))
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
         self.pressure=10**((self.pressurizer_temp+self.water_temp)/500)
