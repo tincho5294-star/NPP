@@ -839,12 +839,12 @@ class GridCell:
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1.3-self.neutron_speed))*0.2
+        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))*0.2
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1)+(self.xenon*0.5))
-        self.next_neutrons=lerp(self.next_neutrons,self.neutron*k,dt)
+        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1))
+        self.next_neutrons=lerp(self.next_neutrons,safe_div((self.neutron*k),self.xenon),dt)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1000000)
@@ -868,6 +868,8 @@ class GridCell:
         self.next_temp=max(20,self.next_temp)
         self.neutron=self.next_neutrons
         self.temp=self.next_temp
+        self.xenon+=((reaction*1e-6)-(self.neutron*(1/self.neutron_speed)))*dt
+        self.xenon=max(0,self.xenon)
 class Reactor:
     def __init__(self,name):
         self.name=name
