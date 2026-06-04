@@ -844,7 +844,8 @@ class GridCell:
             reaction=0
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1))
-        self.next_neutrons=lerp(self.next_neutrons,safe_div((self.neutron*k),self.xenon),dt)
+        xenon_poison=1+(self.xenon*0.4)
+        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/xenon_poison,dt)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1000000)
@@ -868,7 +869,10 @@ class GridCell:
         self.next_temp=max(20,self.next_temp)
         self.neutron=self.next_neutrons
         self.temp=self.next_temp
-        self.xenon+=((reaction*1e-6)-(self.neutron*(1/self.neutron_speed)))*dt
+        xenon_production=reaction*0.015*dt
+        xenon_burnoff=self.neutron*0.01*dt
+        xenon_decay=self.xenon*0.0025*dt
+        self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
 class Reactor:
     def __init__(self,name):
