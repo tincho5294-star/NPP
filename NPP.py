@@ -203,10 +203,11 @@ class StyleManager:
             {"name": "CRAM", "score": 25},
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
-            {"name": "JUGGLE", "score": 25}
+            {"name": "JUGGLE", "score": 25},
+            {"name": "ONSET","score": 300}
         ]
         self.earned_style = 0
-        self.style_rank = ["DULL","CRITICAL","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","NUCLEAR"]
+        self.style_rank = ["DULL","CHERENKOV","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","NUCLEAR"]
         self.current_rank=None
         self.style_multiplier = 1
         self.rank_dur = 100
@@ -970,11 +971,13 @@ class Turbine:
         self.steam_temp=0
         self.RPM=0
         self.total_generation=0
+        self.force=0
         self.generation=0
     def update(self):
         self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.005+self.SteamGenerator.steam_valve*(100-0.005),dt)
         self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve*0.9,dt)
-        self.RPM=lerp(self.RPM,(self.steam*self.pressure*self.steam_temp)/400,dt)
+        self.force=(self.steam*self.pressure*self.steam_temp)/400
+        self.RPM=lerp(self.RPM,self.force,dt)
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
