@@ -846,10 +846,10 @@ class GridCell:
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1))
         xenon_poison=1+(self.xenon*0.4)
-        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/xenon_poison,dt)
+        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/xenon_poison,dt*2)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
-        self.next_neutrons=clamp(self.next_neutrons,0,1000000)
+        self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+(reaction*dt)
         for n in self.neighbors:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,0.005,dt)
@@ -1080,6 +1080,7 @@ while running:
                 all_cell_temp.append(cell.temp)
             cell_temp_total=sum(all_cell_temp)
             reactor.avg_temp=cell_temp_total/208
+            print(cell.neutron if cell.neutron!=0 else "")
     for row in grid:
         for cell in row:
             cell.get_color()
@@ -1114,6 +1115,5 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.water_density)
 pygame.quit()
 sys.exit()
