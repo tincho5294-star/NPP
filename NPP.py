@@ -1080,7 +1080,6 @@ while running:
                 all_cell_temp.append(cell.temp)
             cell_temp_total=sum(all_cell_temp)
             reactor.avg_temp=cell_temp_total/208
-            print(cell.neutron if cell.neutron!=0 else "")
     for row in grid:
         for cell in row:
             cell.get_color()
