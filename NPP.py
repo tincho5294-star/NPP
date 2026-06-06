@@ -846,7 +846,7 @@ class GridCell:
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1))
         xenon_poison=1+(self.xenon*0.4)
-        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/xenon_poison,dt*2)
+        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt*2)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
@@ -862,7 +862,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+(((self.core.water_mass/7000)*(1.0-((self.core.water_mass/7000)*0.9))))),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+(((self.core.water_mass/7000)*(1.0-((self.core.water_mass/7000)*0.999))))),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -948,34 +948,33 @@ class Pump:
     def update(self):
         self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
 class SteamGenerator:
-    def __init__(self,core,turbine,name):
+    def __init__(self,core,name):
         self.name=name
         self.core=core
-        self.turbine=turbine
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
-        self.water_mass=1
-        self.water_flow=0
-        self.steam_valve=0
+        self.water_mass=0.5
+        self.water_flow=1
+        self.steam_valve=1
         self.steam=0
         self.boiling_point=0
     def update(self):
         self.pressure=10**((self.water_temp*(0.1+self.steam*0.9))/250)
-        self.water_temp,self.core.water_temp=heat_exchange(self.water_temp,self.core.water_temp,self.water_flow*(self.water_mass*(1-self.water_mass)),dt)
+        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,self.water_flow*(self.water_mass*(1.0-self.water_mass*0.9)),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
         self.SteamGenerator=SteamGenerator
         self.steam=0
         self.pressure=0
-        self.steam_temp=0
+        self.steam_temp=20
         self.RPM=0
         self.total_generation=0
         self.force=0
         self.generation=0
     def update(self):
-        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.005+self.SteamGenerator.steam_valve*(100-0.005),dt)
-        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve*0.9,dt)
+        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,(0.005+self.SteamGenerator.steam_valve*(100-0.005))*((0.002+self.steam*(100-0.002))*(1.0-self.steam*0.999)),dt)
+        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
@@ -986,6 +985,8 @@ selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 current_control_panel=1
 reactor=Reactor("default")
+sg=SteamGenerator(reactor,"default")
+turbine=Turbine(sg)
 grid=[]
 grid_size=20
 cell_size=10
@@ -1109,10 +1110,15 @@ while running:
     for knob in knobs:
         knob.draw(screen)
     reactor.update()
+    sg.update()
+    turbine.update()
     sm.update()
     sm.draw(screen,500,40)
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
+    print(reactor.water_temp)
+    print(sg.water_temp)
+    print(turbine.steam_temp)
 pygame.quit()
 sys.exit()
