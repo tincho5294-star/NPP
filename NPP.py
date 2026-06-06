@@ -840,7 +840,7 @@ class GridCell:
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))*0.2
+        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
@@ -978,6 +978,8 @@ class Turbine:
         self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.1+self.SteamGenerator.steam_valve*0.9,dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
         self.RPM=lerp(self.RPM,self.force,dt)
+        self.generation=(self.RPM*self.force)
+        self.total_generation+=self.generation*dt
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
@@ -1112,6 +1114,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.water_temp)
+    print(reactor.water_density)
 pygame.quit()
 sys.exit()
