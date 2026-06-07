@@ -232,25 +232,8 @@ class StyleManager:
             if c["timer"] <= 0:
                 self.style_log.remove(c)
         self.rank_dur=clamp(self.rank_dur,0,900)
-        rank_number=self.rank_dur/100
-        if rank_number>=8:
-            self.current_rank=self.style_rank[7]
-        elif rank_number>=7:
-            self.current_rank=self.style_rank[6]
-        elif rank_number>=6:
-            self.current_rank=self.style_rank[5]
-        elif rank_number>=5:
-            self.current_rank=self.style_rank[4]
-        elif rank_number>=4:
-            self.current_rank=self.style_rank[3]
-        elif rank_number>=3:
-            self.current_rank=self.style_rank[2]
-        elif rank_number>=2:
-            self.current_rank=self.style_rank[1]
-        elif rank_number>=1:
-            self.current_rank=self.style_rank[0]
-        else:
-            self.current_rank=None
+        rank_number=self.rank_dur//100
+        self.current_rank=self.style_rank[rank_number-1]
         
         self.style_multiplier = clamp(self.style_multiplier * self.rank_decay_rate,1,5)
         self.rank_dur*=self.rank_decay_rate
@@ -833,7 +816,7 @@ class GridCell:
         pygame.draw.rect(screen,self.color,(self.x,self.y,w-2,h-2))
     def update(self):
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.03,dt)
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.1,dt)
         if self.Area is None:
             return
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.core.water_level/7000)*0.1))*(1.85-self.core.water_density)),dt)
