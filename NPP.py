@@ -850,7 +850,7 @@ class GridCell:
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
-        self.next_temp=self.temp+(reaction*dt)
+        self.next_temp=self.temp+((reaction/(1+(self.core.water_mass/7000)*0.05))*dt)
         for n in self.neighbors:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,0.005,dt)
         if not math.isfinite(self.next_temp):
@@ -862,7 +862,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,((self.core.coolant_flow_rate/100)+(((self.core.water_mass/7000)*(1.0-((self.core.water_mass/7000)*0.999))))),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.05*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -954,14 +954,14 @@ class SteamGenerator:
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
-        self.water_mass=0.5
+        self.water_mass=1
         self.water_flow=1
         self.steam_valve=1
         self.steam=0
         self.boiling_point=0
     def update(self):
         self.pressure=10**((self.water_temp*(0.1+self.steam*0.9))/250)
-        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,self.water_flow*(self.water_mass*(1.0-self.water_mass*0.9)),dt)
+        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.5*(self.water_flow*self.water_mass),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
         self.SteamGenerator=SteamGenerator
@@ -973,8 +973,8 @@ class Turbine:
         self.force=0
         self.generation=0
     def update(self):
-        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,(0.005+self.SteamGenerator.steam_valve*(100-0.005))*((0.002+self.steam*(100-0.002))*(1.0-self.steam*0.999)),dt)
-        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
+        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.05*(0.005+self.SteamGenerator.steam_valve*(100-0.005)),dt)
+        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.05*(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
