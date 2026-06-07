@@ -233,8 +233,7 @@ class StyleManager:
                 self.style_log.remove(c)
         self.rank_dur=clamp(self.rank_dur,0,900)
         rank_number=self.rank_dur//100
-        self.current_rank=self.style_rank[rank_number-1]
-        
+        self.current_rank=self.style_rank[int(rank_number-1)]
         self.style_multiplier = clamp(self.style_multiplier * self.rank_decay_rate,1,5)
         self.rank_dur*=self.rank_decay_rate
     def draw(self, screen, x, y):
@@ -291,7 +290,7 @@ class Knob:
         self.last_sound_tick=None
         self.freshness=1.5
         self.last_released_value=self.value
-        
+        self.last_released_time=pygame.time.get_ticks
         if self._type == 1:
             self.on_marker = Marker(self.x + 28, self.y - 6, owner=self, _type="on")
             self.off_marker = Marker(self.x - 40, self.y - 6, owner=self, _type="off")
@@ -482,6 +481,8 @@ class Knob:
                             CR_throttle.freshness+=0.5
                             CR_throttle.freshness=clamp(CR_throttle.freshness,0,1.5)
                     self.last_released_value=self.value
+                    self.last_released_time=pygame.time.get_ticks()
+                    juggle_history.append({"time":self.last_released_time})
                 dial_drag_cancel_sound.play()
             self.is_dragging=False
         elif e.type==pygame.MOUSEMOTION and self.is_dragging:
@@ -894,7 +895,7 @@ class Reactor:
         self.water_mass+=450*(knobs[8].value/100)*dt
         self.water_mass-=450*(knobs[9].value/100)*dt
         if not math.isfinite(self.water_mass):
-            self.water_mass=1
+            self.water_mass=7000
         self.water_mass=clamp(self.water_mass,0,7000)
 
         self.circ_water_mass+=(450*(knobs[9].value/100))*dt
@@ -907,8 +908,8 @@ class Reactor:
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * (self.water_mass/7000)
         max_saturation=clamp(max_saturation,0,1)
 
-        self.boron+=circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc)-(((7000*max_saturation)-(self.boron))*dt)
-        self.precipitated_boron+=(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((7000*max_saturation)-(self.boron))*dt)
+        self.boron+=((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))*dt))
+        self.precipitated_boron+=(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation))*dt)
         self.boron=clamp(self.boron,0,7000)
 
         self.boron_conc=self.boron/self.water_mass
@@ -962,6 +963,7 @@ class Turbine:
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
+juggle_history=[]
 cell_temp_total=0
 all_cell_temp=[]
 selected_area=[]
@@ -1088,7 +1090,17 @@ while running:
             for cell in row:
                 if cell.Area in selected_area_set:
                     cell.CR_depth = cr_value
-                    
+    amount=len(juggle_history)
+    if amount<2:
+        p=c=None
+    else:
+        p=juggle_history[amount-2]
+        c=juggle_history[amount-1]
+    if p is not None and c is not None:
+        if c["time"]-p["time"]>=4000 or amount>=4:
+            juggle_history.clear()
+            if amount>=4:
+                sm.add_style_log(sm.style[5])
     CR_throttle.draw(screen)
     for knob in knobs:
         knob.draw(screen)
@@ -1101,7 +1113,6 @@ while running:
     pygame.display.flip()
     clock.tick(60)
     print(reactor.water_temp)
-    print(sg.water_temp)
-    print(turbine.steam_temp)
+    print(reactor.boron)
 pygame.quit()
 sys.exit()
