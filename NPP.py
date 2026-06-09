@@ -922,7 +922,7 @@ class Reactor:
 
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
-        self.pressure=10**((self.pressurizer_temp+self.water_temp)/40)
+        self.pressure=(self.pressurizer_temp+self.water_temp)/40
         self.boiling_point=100*math.log10(self.pressure)
         self.boiling=self.avg_temp>self.boiling_point
 
