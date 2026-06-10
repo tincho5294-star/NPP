@@ -921,8 +921,8 @@ class Reactor:
         self.water_density=clamp(self.water_density,0,1)
 
 
-        self.pressurizer_temp=lerp(self.pressurizer_temp,2.5*(self.heater+0.5*self.fine_heater)-(self.sprinkler+0.5*self.fine_sprinkler),dt)
-        self.pressure=(self.pressurizer_temp+self.water_temp)/40
+        self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
+        self.pressure=(self.pressurizer_temp*(self.water_level/7000))/40
         self.boiling_point=100*math.log10(self.pressure)
         self.boiling=self.avg_temp>self.boiling_point
 
@@ -1116,7 +1116,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.water_temp)
-    print(reactor.boron)
+    print(reactor.pressure)
 pygame.quit()
 sys.exit()
