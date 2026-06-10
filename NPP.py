@@ -922,8 +922,8 @@ class Reactor:
 
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
-        self.pressure=(self.pressurizer_temp*(self.water_level/7000))/40
-        self.boiling_point=100*math.log10(self.pressure)
+        self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
+        self.boiling_point=100*math.log10(9+self.pressure)
         self.boiling=self.avg_temp>self.boiling_point
 
 class Pump:
@@ -945,8 +945,8 @@ class SteamGenerator:
         self.steam=0
         self.boiling_point=0
     def update(self):
-        self.pressure=(self.water_temp*(0.1+self.steam*0.9))/40
-        self.boiling_point=100*math.log10(self.pressure)
+        self.pressure=(self.water_temp*(0.1+self.steam*0.9))/20
+        self.boiling_point=100*math.log10(9+self.pressure)
         self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.5*(self.water_flow*self.water_mass),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
@@ -959,14 +959,14 @@ class Turbine:
         self.force=0
         self.generation=0
     def update(self):
-        self.pressure=(self.steam_temp*(0.1+self.steam*0.9))/40
+        self.pressure=(self.steam_temp*(0.1+self.steam*0.9))/20
         self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.05*(0.005+self.SteamGenerator.steam_valve*(100-0.005)),dt)
         self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.05*(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
-        self.boiling_point=100*math.log10(self.pressure)
+        self.boiling_point=100*math.log10(9+self.pressure)
 juggle_history=[]
 cell_temp_total=0
 all_cell_temp=[]
@@ -1116,6 +1116,6 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.pressure)
+    print(reactor.boiling_point)
 pygame.quit()
 sys.exit()
