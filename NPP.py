@@ -923,7 +923,7 @@ class Reactor:
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
-        self.boiling_point=100*math.log10(9+self.pressure)
+        self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
 
 class Pump:
@@ -946,7 +946,7 @@ class SteamGenerator:
         self.boiling_point=0
     def update(self):
         self.pressure=(self.water_temp*(0.1+self.steam*0.9))/20
-        self.boiling_point=100*math.log10(9+self.pressure)
+        self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.5*(self.water_flow*self.water_mass),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
@@ -966,7 +966,7 @@ class Turbine:
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
-        self.boiling_point=100*math.log10(9+self.pressure)
+        self.boiling_point=100*math.log10(9+self.pressure**2.9)
 juggle_history=[]
 cell_temp_total=0
 all_cell_temp=[]
