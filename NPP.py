@@ -939,15 +939,16 @@ class SteamGenerator:
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
-        self.water_mass=1
+        self.water_mass=2000
         self.water_flow=1
+        self.water_level=2000
         self.steam_valve=1
         self.steam=0
         self.boiling_point=0
     def update(self):
         self.pressure=(self.water_temp*(0.1+self.steam*0.9))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
-        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.5*(self.water_flow*self.water_mass),dt)
+        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.05*(self.water_flow*(self.water_mass/2000)),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
         self.SteamGenerator=SteamGenerator
