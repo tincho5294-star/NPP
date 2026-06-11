@@ -924,7 +924,7 @@ class Reactor:
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
-        self.boiling=self.avg_temp>self.boiling_point
+        self.boiling=self.water_temp>self.boiling_point
 
 class Pump:
     def __init__(self):
