@@ -946,7 +946,7 @@ class SteamGenerator:
         self.steam=0
         self.boiling_point=0
     def update(self):
-        self.pressure=(self.water_temp*(0.1+self.steam*0.9))/20
+        self.pressure=(self.water_temp*(0.1+(self.steam/2000)*0.9))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.05*(self.water_flow*(self.water_mass/2000)),dt)
 class Turbine:
@@ -960,7 +960,7 @@ class Turbine:
         self.force=0
         self.generation=0
     def update(self):
-        self.pressure=(self.steam_temp*(0.1+self.steam*0.9))/20
+        self.pressure=(self.steam_temp*(0.1+(self.steam/2000)*0.9))/20
         self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.05*(0.005+self.SteamGenerator.steam_valve*(100-0.005)),dt)
         self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.05*(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
