@@ -862,6 +862,7 @@ class GridCell:
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.void=0
         self.boron=0
         self.precipitated_boron=0
         self.pressurizer_temp=20
@@ -924,7 +925,9 @@ class Reactor:
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
-        self.boiling=self.water_temp>self.boiling_point
+        self.boiling=self.water_temp>=self.boiling_point
+        self.water_mass-=(self.water_temp/self.boiling_point)
+        self.void+=(self.water_temp/self.boiling_point)
 
 class Pump:
     def __init__(self):
