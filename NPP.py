@@ -927,11 +927,11 @@ class Reactor:
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.water_temp>=self.boiling_point
-        if self.boiling:
-            self.water_mass-=200*(self.water_temp/self.boiling_point)
-            self.void+=200*(self.water_temp/self.boiling_point)
-            self.void_temp=self.water_temp
+        self.water_mass-=200*(self.water_temp/self.boiling_point)*dt
+        self.void+=200*(self.water_temp/self.boiling_point)*dt
+        self.void_temp=self.water_temp
         self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032*(((self.void*0.016)*(self.water_mass/7000))*self.coolant_flow_rate)
+        self.void-=200*(max(self.void_temp,self.water_temp)-min(self.void_temp,self.water_temp))
         
 class Pump:
     def __init__(self):
