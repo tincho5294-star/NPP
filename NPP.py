@@ -931,8 +931,7 @@ class Reactor:
             self.water_mass-=200*(self.water_temp/self.boiling_point)
             self.void+=200*(self.water_temp/self.boiling_point)
             self.void_temp=self.water_temp
-        else:
-            self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032*(((self.void*0.016)*(self.water_mass/7000))*self.coolant_flow_rate)
+        self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032*(((self.void*0.016)*(self.water_mass/7000))*self.coolant_flow_rate)
         
 class Pump:
     def __init__(self):
