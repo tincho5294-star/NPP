@@ -863,6 +863,8 @@ class Reactor:
     def __init__(self,name):
         self.name=name
         self.boron=0
+        self.void=0
+        self.void_temp=0
         self.precipitated_boron=0
         self.pressurizer_temp=20
         self.water_temp=20
@@ -925,7 +927,8 @@ class Reactor:
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
-
+        self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032,dt)
+        self.void,self.water_mass=heat_exchange(self.void,self.water_mass,0.032*abs(self.water_temp-self.void_temp),dt)
 class Pump:
     def __init__(self):
         self.force=0
@@ -1116,6 +1119,5 @@ while running:
     plant_terminal.draw(screen)
     pygame.display.flip()
     clock.tick(60)
-    print(reactor.boiling_point)
 pygame.quit()
 sys.exit()
