@@ -491,6 +491,19 @@ class Knob:
     def hit_test(self,mx,my):
         rr=(self.radius+self.hitpad)**2
         return (mx-self.x)**2+(my-self.y)**2<=rr
+class Meter:
+    def __init__(self,x,y,w,h,value,min_value,max_value):
+        self.x=x
+        self.y=y
+        self.w=w
+        self.h=h
+        self.value=value
+        self.min_value=min_value
+        self.max_value=max_value
+        self.points=[]
+    def value_to_height(self):
+        value_ratio=clamp((self.value-self.min_value)/(self.max_value-self.min_value),0,1)
+        return self.y+(self.h*(1-value_ratio))
 class Throttle:
     def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=100):
         self.x, self.y, self.name = x, y, name
@@ -862,9 +875,10 @@ class GridCell:
 class Reactor:
     def __init__(self,name):
         self.name=name
+        self.void=0
         self.boron=0
         self.void=0
-        self.void_temp=0
+        self.void_temp=20
         self.precipitated_boron=0
         self.pressurizer_temp=20
         self.water_temp=20
@@ -886,6 +900,7 @@ class Reactor:
         self.water_mass=7000
         self.water_density=0
         self.circ_water_mass=0
+        self.void_temp=20
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -942,15 +957,16 @@ class SteamGenerator:
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
-        self.water_mass=1
+        self.water_mass=2000
         self.water_flow=1
+        self.water_level=2000
         self.steam_valve=1
         self.steam=0
         self.boiling_point=0
     def update(self):
-        self.pressure=(self.water_temp*(0.1+self.steam*0.9))/20
+        self.pressure=(self.water_temp*(0.1+(self.steam/2000)*0.9))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
-        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.5*(self.water_flow*self.water_mass),dt)
+        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.05*(self.water_flow*(self.water_mass/2000)),dt)
 class Turbine:
     def __init__(self,SteamGenerator):
         self.SteamGenerator=SteamGenerator
@@ -962,7 +978,7 @@ class Turbine:
         self.force=0
         self.generation=0
     def update(self):
-        self.pressure=(self.steam_temp*(0.1+self.steam*0.9))/20
+        self.pressure=(self.steam_temp*(0.1+(self.steam/2000)*0.9))/20
         self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.05*(0.005+self.SteamGenerator.steam_valve*(100-0.005)),dt)
         self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.05*(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
         self.force=(self.steam*self.pressure*self.steam_temp)/400
