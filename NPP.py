@@ -885,6 +885,7 @@ class Reactor:
         self.water_mass=7000
         self.water_density=0
         self.circ_water_mass=0
+        self.void_temp=20
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -926,9 +927,13 @@ class Reactor:
         self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.water_temp>=self.boiling_point
-        self.water_mass-=(self.water_temp/self.boiling_point)
-        self.void+=(self.water_temp/self.boiling_point)
-
+        if self.boiling:
+            self.water_mass-=200*(self.water_temp/self.boiling_point)
+            self.void+=200*(self.water_temp/self.boiling_point)
+            self.void_temp=self.water_temp
+        else:
+            self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032*(((self.void*0.016)*(self.water_mass/7000))*self.coolant_flow_rate)
+        
 class Pump:
     def __init__(self):
         self.force=0
