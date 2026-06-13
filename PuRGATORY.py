@@ -520,8 +520,8 @@ class Meter:
             self.points.clear()
         self.value_surface=dial_font.render(str(round(self.value,1)),False,(255,140,0))
     def draw(self,screen):
-        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+10,self.h+10))
-        pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w,self.h))
+        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+20,self.h+10))
+        pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w+15,self.h))
         for i in range(self.x,(self.x+self.w)+1,int(self.w/5)):
             pygame.draw.line(screen,(25,25,25),(i,self.y),(i,(self.y+self.h)))
         for k in range(self.y,(self.y+self.h)+1,int(self.h/5)):
