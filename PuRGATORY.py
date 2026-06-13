@@ -518,9 +518,9 @@ class Meter:
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
             self.points.clear()
-        self.value_surface=dial_font.render(str(round(self.value,1)),False,(255,140,0))
+        self.value_surface=dial_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
-        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+20,self.h+10))
+        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+25,self.h+10))
         pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w+15,self.h))
         for i in range(self.x,(self.x+self.w)+1,int(self.w/5)):
             pygame.draw.line(screen,(25,25,25),(i,self.y),(i,(self.y+self.h)))
@@ -530,6 +530,7 @@ class Meter:
             py=self.value_to_y(p["value"])
             px=self.time_to_x(p["time"])
             pygame.draw.circle(screen,(255, 140, 0),(px,py),1)
+        screen.blit(self.value_surface,(self.x+self.w,self.value_to_y(self.value)))
 class Throttle:
     def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=100):
         self.x, self.y, self.name = x, y, name
