@@ -511,16 +511,16 @@ class Meter:
         return lerp(self.x,(self.x+self.w),time_ratio)
     def update(self):
         self.latest_time+=dt
-        self.max_value=int(self.value*2)
+        self.max_value=lerp(self.max_value,self.value,dt)
         self.points.append({"time":self.latest_time,"value":self.value})
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
             self.points.clear()
     def draw(self,screen):
         pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w,self.h))
-        for i in range(self.x,(self.x+self.w),int(self.w/5)):
+        for i in range(self.x,(self.x+self.w)+1,int(self.w/5)):
             pygame.draw.line(screen,(255,255,255),(i,self.y),(i,(self.y+self.h)))
-        for k in range(self.y,self.y+self.h,int(self.h/5)):
+        for k in range(self.y,(self.y+self.h)+1,int(self.h/5)):
             pygame.draw.line(screen,(255,255,255),(self.x,k),((self.x+self.w),k))
         for p in self.points:
             py=self.value_to_y(p["value"])
