@@ -502,6 +502,7 @@ class Meter:
         self.min_value=min_value
         self.max_value=max_value
         self.latest_time=0
+        self.value_surface=dial_font.render(str(round(self.value,1)),False,(255,140,0))
         self.points=[]
     def value_to_y(self,value):
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
@@ -517,6 +518,7 @@ class Meter:
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
             self.points.clear()
+        self.value_surface=dial_font.render(str(round(self.value,1)),False,(255,140,0))
     def draw(self,screen):
         pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+10,self.h+10))
         pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w,self.h))
@@ -963,7 +965,7 @@ class Reactor:
 
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
-        self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/700000))/20
+        self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/70000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
         self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032,dt)
