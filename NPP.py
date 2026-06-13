@@ -512,17 +512,18 @@ class Meter:
     def update(self):
         self.latest_time+=dt
         if self.value>=self.max_value:
-            self.max_value=lerp(self.max_value,self.value,dt)
+            self.max_value=self.value
         self.points.append({"time":self.latest_time,"value":self.value})
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
             self.points.clear()
     def draw(self,screen):
+        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+10,self.h+10))
         pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w,self.h))
         for i in range(self.x,(self.x+self.w)+1,int(self.w/5)):
-            pygame.draw.line(screen,(255,255,255),(i,self.y),(i,(self.y+self.h)))
+            pygame.draw.line(screen,(25,25,25),(i,self.y),(i,(self.y+self.h)))
         for k in range(self.y,(self.y+self.h)+1,int(self.h/5)):
-            pygame.draw.line(screen,(255,255,255),(self.x,k),((self.x+self.w),k))
+            pygame.draw.line(screen,(25,25,25),(self.x,k),((self.x+self.w),k))
         for p in self.points:
             py=self.value_to_y(p["value"])
             px=self.time_to_x(p["time"])
@@ -962,7 +963,7 @@ class Reactor:
 
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,20+(250*((self.heater/100)+0.5*(self.fine_heater/100))-((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
-        self.pressure=(self.pressurizer_temp*(self.water_level/7000))/20
+        self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/700000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
         self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032,dt)
@@ -1026,7 +1027,7 @@ grid_origin_y=50
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
-meter=Meter(60,100,150,80,50,0,100,40)
+meter=Meter(60,100,150,80,50,0,200,40)
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
@@ -1157,7 +1158,7 @@ while running:
     sm.update()
     sm.draw(screen,500,40)
     plant_terminal.draw(screen)
-    meter.value=reactor.avg_temp
+    meter.value=reactor.boiling_point
     meter.update()
     meter.draw(screen)
     pygame.display.flip()
