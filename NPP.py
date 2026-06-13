@@ -492,18 +492,40 @@ class Knob:
         rr=(self.radius+self.hitpad)**2
         return (mx-self.x)**2+(my-self.y)**2<=rr
 class Meter:
-    def __init__(self,x,y,w,h,value,min_value,max_value):
+    def __init__(self,x,y,w,h,value,min_value,max_value,timeline_length):
         self.x=x
         self.y=y
         self.w=w
         self.h=h
         self.value=value
+        self.timeline_length=timeline_length
         self.min_value=min_value
         self.max_value=max_value
+        self.latest_time=0
         self.points=[]
-    def value_to_height(self):
-        value_ratio=clamp((self.value-self.min_value)/(self.max_value-self.min_value),0,1)
-        return self.y+(self.h*(1-value_ratio))
+    def value_to_y(self,value):
+        value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
+        return lerp((self.y+self.h),self.y,value_ratio)
+    def time_to_x(self,time):
+        time_ratio=clamp((time/self.timeline_length),0,1)
+        return lerp(self.x,(self.x+self.w),time_ratio)
+    def update(self):
+        self.latest_time+=dt
+        self.max_value=int(self.value*2)
+        self.points.append({"time":self.latest_time,"value":self.value})
+        if self.latest_time>=self.timeline_length:
+            self.latest_time=0
+            self.points.clear()
+    def draw(self,screen):
+        pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w,self.h))
+        for i in range(self.x,(self.x+self.w),int(self.w/5)):
+            pygame.draw.line(screen,(255,255,255),(i,self.y),(i,(self.y+self.h)))
+        for k in range(self.y,self.y+self.h,int(self.h/5)):
+            pygame.draw.line(screen,(255,255,255),(self.x,k),((self.x+self.w),k))
+        for p in self.points:
+            py=self.value_to_y(p["value"])
+            px=self.time_to_x(p["time"])
+            pygame.draw.circle(screen,(255, 140, 0),(px,py),1)
 class Throttle:
     def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=100):
         self.x, self.y, self.name = x, y, name
@@ -1003,6 +1025,7 @@ grid_origin_y=50
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
+meter=Meter(60,100,150,80,50,0,100,40)
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
@@ -1026,7 +1049,7 @@ for row in grid:
     for cell in row:
         cell.get_neighbor()
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("Knob Test")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont(None, 24)
@@ -1133,6 +1156,9 @@ while running:
     sm.update()
     sm.draw(screen,500,40)
     plant_terminal.draw(screen)
+    meter.value=reactor.avg_temp
+    meter.update()
+    meter.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
