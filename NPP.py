@@ -511,7 +511,8 @@ class Meter:
         return lerp(self.x,(self.x+self.w),time_ratio)
     def update(self):
         self.latest_time+=dt
-        self.max_value=lerp(self.max_value,self.value,dt)
+        if self.value>=self.max_value:
+            self.max_value=lerp(self.max_value,self.value,dt)
         self.points.append({"time":self.latest_time,"value":self.value})
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
