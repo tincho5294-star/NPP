@@ -6,6 +6,7 @@ import math
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
+meter_font=pygame.font.SysFont("arial",10)
 style_font=pygame.font.SysFont("lucidaconsole",30)
 dial_clicking_sound=pygame.mixer.Sound('dial_clicking_sound.mp3')
 dial_drag_cancel_sound=pygame.mixer.Sound('dial_drag_cancel.mp3')
@@ -502,7 +503,7 @@ class Meter:
         self.min_value=min_value
         self.max_value=max_value
         self.latest_time=0
-        self.value_surface=dial_font.render(str(round(self.value,1)),False,(255,140,0))
+        self.value_surface=meter_font.render(str(round(self.value,1)),False,(255,140,0))
         self.points=[]
     def value_to_y(self,value):
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
@@ -518,10 +519,10 @@ class Meter:
         if self.latest_time>=self.timeline_length:
             self.latest_time=0
             self.points.clear()
-        self.value_surface=dial_font.render(str(round(self.value,1)),True,(255,140,0))
+        self.value_surface=meter_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
-        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+25,self.h+10))
-        pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w+15,self.h))
+        pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+30,self.h+10))
+        pygame.draw.rect(screen,(15,15,15),(self.x,self.y,self.w+20,self.h))
         for i in range(self.x,(self.x+self.w)+1,int(self.w/5)):
             pygame.draw.line(screen,(25,25,25),(i,self.y),(i,(self.y+self.h)))
         for k in range(self.y,(self.y+self.h)+1,int(self.h/5)):
@@ -531,6 +532,7 @@ class Meter:
             px=self.time_to_x(p["time"])
             pygame.draw.circle(screen,(255, 140, 0),(px,py),1)
         screen.blit(self.value_surface,(self.x+self.w,self.value_to_y(self.value)))
+        pygame.draw.line(screen,(255,100,0),(self.time_to_x(self.latest_time),self.value_to_y(self.value)),(self.x+self.w,self.value_to_y(self.value)))
 class Throttle:
     def __init__(self, x, y, name, vmin=0, vmax=100, w=40, h=150, value=100):
         self.x, self.y, self.name = x, y, name
@@ -886,7 +888,7 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.05*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
+        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.016*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -965,8 +967,8 @@ class Reactor:
         self.water_density=clamp(self.water_density,0,1)
 
 
-        self.pressurizer_temp=lerp(self.pressurizer_temp,250*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
-        self.pressurizer_temp=lerp(self.pressurizer_temp,safe_div(20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
+        self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp+20*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
+        self.pressurizer_temp=lerp(self.pressurizer_temp,20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))*dt)
         self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/700000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
