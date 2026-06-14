@@ -965,8 +965,8 @@ class Reactor:
         self.water_density=clamp(self.water_density,0,1)
 
 
-        self.pressurizer_temp=lerp(self.pressurizer_temp,250,((self.heater/100)+0.5*(self.fine_heater/100))*dt)
-        self.pressurizer_temp=lerp(self.pressurizer_temp,20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))*dt)
+        self.pressurizer_temp=lerp(self.pressurizer_temp,250*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
+        self.pressurizer_temp=lerp(self.pressurizer_temp,safe_div(20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))),dt)
         self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/700000))/20
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
         self.boiling=self.avg_temp>self.boiling_point
