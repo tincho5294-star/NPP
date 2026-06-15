@@ -1098,8 +1098,10 @@ while running:
             running = False
         plant_terminal.handle_event(e)
         for knob in knobs:
-            knob.handle_event(e)
-        CR_throttle.handle_event(e)
+            if current_control_panel==1:
+                knob.handle_event(e)
+        if current_control_panel==1:
+            CR_throttle.handle_event(e)
         for button in buttons:
             button.handle_event(e)
         if e.type == pygame.MOUSEBUTTONDOWN:
@@ -1130,7 +1132,8 @@ while running:
     reactor.avg_temp=cell_temp_total/208
     selected_area.clear()
     for button in buttons:
-        button.draw(screen)
+        if current_control_panel==1:
+            button.draw(screen)
         label = font.render(button.name, True, (240, 240, 240) if (button._type== 1 or button._type==2) else (30,30,30))
         if button._type in (1, 2):
             label_rect = label.get_rect(center=(button.x, button.y + button.radius + 24))
@@ -1158,9 +1161,11 @@ while running:
             juggle_history.clear()
             if amount>=4:
                 sm.add_style_log(sm.style[5])
-    CR_throttle.draw(screen)
+    if current_control_panel==1:
+        CR_throttle.draw(screen)
     for knob in knobs:
-        knob.draw(screen)
+        if current_control_panel==1:
+            knob.draw(screen)
     reactor.update()
     sg.update()
     turbine.update()
