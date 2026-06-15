@@ -866,7 +866,7 @@ class GridCell:
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))
+        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))*2
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
@@ -1033,7 +1033,7 @@ grid_origin_y=50
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
-meter=Meter(60,100,150,80,50,0,200,40)
+boiling_point_meter=Meter(60,100,150,80,50,0,200,40)
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
@@ -1074,6 +1074,9 @@ knobs=[
     Knob(60,400,"Makeup Valve",value=0,radius=40,_type=2),
     Knob(60,500,"Letdown Valve",value=0,radius=40,_type=2)
     ]
+knobs_2=[
+    Knob(300,400,"Steam Valve",_type=2)
+]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
     Button(490, 490, "A", 3, toggle=False, ready=True),
@@ -1164,9 +1167,9 @@ while running:
     sm.update()
     sm.draw(screen,500,40)
     plant_terminal.draw(screen)
-    meter.value=reactor.boiling_point
-    meter.update()
-    meter.draw(screen)
+    boiling_point_meter.value=reactor.boiling_point
+    boiling_point_meter.update()
+    boiling_point_meter.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
