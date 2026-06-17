@@ -268,7 +268,7 @@ class StyleManager:
 
         draw_text(f"x{self.style_multiplier:.2f}", style_font, m_color, screen, draw_x + 5, draw_y + h - 25)
 class Knob:
-    def __init__(self,x,y,name,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False): 
+    def __init__(self,x,y,name,panel_number,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False): 
         self.x=x
         self.y=y
         self.name=name
@@ -292,6 +292,7 @@ class Knob:
         self.freshness=1.5
         self.last_released_value=self.value
         self.last_released_time=pygame.time.get_ticks
+        self.panel_number=panel_number
         if self._type == 1:
             self.on_marker = Marker(self.x + 28, self.y - 6, owner=self, _type="on")
             self.off_marker = Marker(self.x - 40, self.y - 6, owner=self, _type="off")
@@ -468,6 +469,8 @@ class Knob:
                 mx, my = e.pos
                 if self.hit_test(mx,my):
                     self.is_dragging=True
+        if current_control_panel!=self.panel_number:
+            self.is_dragging=False
         elif e.type==pygame.MOUSEBUTTONUP and e.button==1:
             if self.is_dragging:
                 if abs(self.value-self.last_released_value) > 1e-6:
@@ -1063,19 +1066,19 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont(None, 24)
 sm=StyleManager()
 knobs=[
-    Knob(300,400, "Heater", value=0, radius=40, _type=2),
-    Knob(300,500, "Fine Control Heater", value=0, radius=40, _type=2),
-    Knob(180,400, "Sprinkler", value=0, radius=40, _type=2),
-    Knob(180,500, "Fine Control Sprinkler", value=0, radius=40, _type=2),
-    Knob(420, 300, "Coolant Flow Rate", value=0, radius=40, _type=2),
-    Knob(420, 400, "Boration", value=0, radius=40, _type=2),
-    Knob(420, 500,"Demin. control", value=0, radius=40, _type=2),
-    Knob(300, 300, "switch", vmin=0, vmax=100, value=0, radius=40, _type=1),
-    Knob(60,400,"Makeup Valve",value=0,radius=40,_type=2),
-    Knob(60,500,"Letdown Valve",value=0,radius=40,_type=2)
+    Knob(300,400, "Heater",1,value=0, radius=40, _type=2),
+    Knob(300,500, "Fine Control Heater",1, value=0, radius=40, _type=2),
+    Knob(180,400, "Sprinkler",1, value=0,radius=40, _type=2),
+    Knob(180,500, "Fine Control Sprinkler",1, value=0, radius=40, _type=2),
+    Knob(420, 300, "Coolant Flow Rate",1, value=0, radius=40, _type=2),
+    Knob(420, 400, "Boration",1, value=0, radius=40, _type=2),
+    Knob(420, 500,"Demin. control",1, value=0, radius=40, _type=2),
+    Knob(300, 300, "switch",1, vmin=0, vmax=100, value=0, radius=40, _type=1),
+    Knob(60,400,"Makeup Valve",1,value=0,radius=40,_type=2),
+    Knob(60,500,"Letdown Valve",1,value=0,radius=40,_type=2)
     ]
 knobs_2=[
-    Knob(300,400,"Steam Valve",_type=2)
+    Knob(300,400,"Steam Valve",2,_type=2)
 ]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
@@ -1103,20 +1106,28 @@ while running:
         if current_control_panel==1:
             CR_throttle.handle_event(e)
         for button in buttons:
-            button.handle_event(e)
+            if current_control_panel==1:
+                button.handle_event(e)
+        if e.type==pygame.KEYDOWN:
+            if e.key==pygame.K_RIGHT:
+                current_control_panel+=1
+            elif e.key==pygame.K_LEFT:
+                current_control_panel-=1
         if e.type == pygame.MOUSEBUTTONDOWN:
             all_button = next((button for button in buttons if button.name == "ALL"), None)
             if all_button and all_button.toggle:
                 for button in buttons:
                     if button.name in AREA_BUTTON_NAMES:
                         button.toggle = True
+    current_control_panel=clamp(current_control_panel,1,4)
     all_cell_temp.clear()
     for row in grid:
         for cell in row:
             cell.update()
 
     for button in buttons:
-        button.update()
+        if current_control_panel==1:
+            button.update()
 
     screen.fill((60, 60, 60))
     for row in grid:
@@ -1127,8 +1138,9 @@ while running:
             reactor.avg_temp=cell_temp_total/208
     for row in grid:
         for cell in row:
-            cell.get_color()
-            cell.draw(screen)
+            if current_control_panel==1:
+                cell.get_color()
+                cell.draw(screen)
     reactor.avg_temp=cell_temp_total/208
     selected_area.clear()
     for button in buttons:
@@ -1174,7 +1186,8 @@ while running:
     plant_terminal.draw(screen)
     boiling_point_meter.value=reactor.boiling_point
     boiling_point_meter.update()
-    boiling_point_meter.draw(screen)
+    if current_control_panel==1:
+        boiling_point_meter.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
