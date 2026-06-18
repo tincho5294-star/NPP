@@ -205,7 +205,8 @@ class StyleManager:
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
             {"name": "JUGGLE", "score": 25},
-            {"name": "ONSET","score": 300}
+            {"name": "ONSET","score": 300},
+            {"name": "RECKLESS","score":5}
         ]
         self.earned_style = 0
         self.style_rank = ["DULL","CHERENKOV","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","NUCLEAR"]
@@ -464,14 +465,26 @@ class Knob:
             pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
 
     def handle_event(self,e):
-        if e.type==pygame.MOUSEBUTTONDOWN:
-            if e.button==1:
-                mx, my = e.pos
-                if self.hit_test(mx,my):
-                    self.is_dragging=True
-        if current_control_panel!=self.panel_number:
+        if self.panel_number!=current_control_panel:
             self.is_dragging=False
-        elif e.type==pygame.MOUSEBUTTONUP and e.button==1:
+        if comparison_control_panel!=current_control_panel:
+            sm.style_multiplier*=self.freshness
+            self.freshness-=0.7
+            for knob in knobs:
+                if self.name==knob.name:
+                    continue
+                else:
+                    knob.freshness+=0.5
+                    knob.freshness=clamp(knob.freshness,0,1.5)
+                    CR_throttle.freshness+=0.5
+                    CR_throttle.freshness=clamp(CR_throttle.freshness,0,1.5)
+            self.last_released_value=self.value
+            self.last_released_time=pygame.time.get_ticks()
+            sm.add_style_log(sm.style[7])
+            juggle_history.append({"time":self.last_released_time})
+            dial_drag_cancel_sound.play()
+            self.is_dragging=False
+        if e.type==pygame.MOUSEBUTTONUP and e.button==1:
             if self.is_dragging:
                 if abs(self.value-self.last_released_value) > 1e-6:
                     sm.style_multiplier*=self.freshness
@@ -489,6 +502,11 @@ class Knob:
                     juggle_history.append({"time":self.last_released_time})
                 dial_drag_cancel_sound.play()
             self.is_dragging=False
+        if e.type==pygame.MOUSEBUTTONDOWN:
+            if e.button==1:
+                mx, my = e.pos
+                if self.hit_test(mx,my):
+                    self.is_dragging=True
         elif e.type==pygame.MOUSEMOTION and self.is_dragging:
             self.drag(e.pos[0],e.pos[1])
         self.freshness=clamp(self.freshness,0,1.5)
@@ -1025,6 +1043,7 @@ all_cell_temp=[]
 selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 current_control_panel=1
+comparison_control_panel=1
 reactor=Reactor("default")
 sg=SteamGenerator(reactor,"default")
 turbine=Turbine(sg)
@@ -1188,6 +1207,7 @@ while running:
     boiling_point_meter.update()
     if current_control_panel==1:
         boiling_point_meter.draw(screen)
+    comparison_control_panel=current_control_panel
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
