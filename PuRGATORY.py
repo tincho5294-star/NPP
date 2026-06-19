@@ -360,130 +360,129 @@ class Knob:
             self.last_sound_tick=None
 
     def draw(self,screen):
-        pygame.draw.rect(screen, (30, 30, 30), (self.x - 45, self.y - 45, 90, 90))
-        global dial_font
-        name_surf = dial_font.render(self.name, True, (200, 200, 200))
-        name_rect = name_surf.get_rect(center=(self.x, self.y + self.radius-10))
-        screen.blit(name_surf, name_rect)
-        gauge_w,gauge_h=5,80
-        gauge_ratio=(self.freshness)/1.5
-        f = int(self.freshness * 100)
+        if self.panel_number==current_control_panel:
+            pygame.draw.rect(screen, (30, 30, 30), (self.x - 45, self.y - 45, 90, 90))
+            global dial_font
+            name_surf = dial_font.render(self.name, True, (200, 200, 200))
+            name_rect = name_surf.get_rect(center=(self.x, self.y + self.radius-10))
+            screen.blit(name_surf, name_rect)
+            gauge_w,gauge_h=5,80
+            gauge_ratio=(self.freshness)/1.5
+            f = int(self.freshness * 100)
 
-        if f > 80:
-            gauge_color = (255,173,0)
-        elif f > 10:
-            gauge_color = (255,255,255)
-        else:
-            gauge_color = (255,0,0)
-        pygame.draw.rect(screen,gauge_color,(self.x+55,self.y-45,gauge_w,gauge_h*gauge_ratio))
-        if self._type==1:
-            if self.value in (self.vmin, self.vmax):
+            if f > 80:
+                gauge_color = (255,173,0)
+            elif f > 10:
+                gauge_color = (255,255,255)
+            else:
+                gauge_color = (255,0,0)
+            pygame.draw.rect(screen,gauge_color,(self.x+55,self.y-45,gauge_w,gauge_h*gauge_ratio))
+            if self._type==1:
+                if self.value in (self.vmin, self.vmax):
+                    ang = math.radians(self.value_to_angle(self.value))
+                    ang_deg=math.degrees(ang)
+                    self.last_switch_angle=ang
+                else:
+                    ang=self.last_switch_angle
+                    ang_deg=math.degrees(ang)
+                pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
+                finx=self.x+math.cos(math.radians(self.amax_1))*self.radius
+                finy=self.y-math.sin(math.radians(self.amax_1))*self.radius
+                sinx=self.x+math.cos(math.radians(self.amin_1))*self.radius
+                siny=self.y-math.sin(math.radians(self.amin_1))*self.radius
+                vinx=self.x+math.cos(ang)*(self.radius*0.225)
+                viny=self.y-math.sin(ang)*(self.radius*0.225)
+                left_vinx=self.x+math.cos(ang+0.5*(math.pi))*(self.radius*0.075)
+                left_viny=self.y-math.sin(ang+0.5*(math.pi))*(self.radius*0.075)
+                right_vinx=self.x+math.cos(ang+1.5*(math.pi))*(self.radius*0.075)
+                right_viny=self.y-math.sin(ang+1.5*(math.pi))*(self.radius*0.075)
+                
+                pygame.draw.line(screen,(200,200,200),(self.x,self.y),(finx,finy),3)
+                pygame.draw.line(screen,(200,200,200),(self.x,self.y),(sinx,siny),3)
+                
+                length = int(self.radius * 1.0)
+                w=9
+                pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
+                pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
+                rot=pygame.transform.rotate(pointer,ang_deg+90)
+                rect = rot.get_rect(center=(self.x, self.y))
+                screen.blit(rot,rect)
+                
+                pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
+                pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
+                self.on_marker.draw(screen)
+                self.off_marker.draw(screen)
+
+            elif self._type==2:
+                for i in range(self.amax_2-180,(self.amin_2+180)+1,60):
+                    value_t=(i-(self.amax_2-180))/((self.amin_2+360)-(self.amax_2))
+                    i_value=int(lerp(0,100,value_t))
+                    value_text=dial_font.render(str(round(i_value,0)),True,(175,175,175))
+                    ix=self.x-math.cos(math.radians(normalize360(i)))*28
+                    iy=self.y+math.sin(math.radians(normalize360(i)))*28
+                    if i_value<50:
+                        screen.blit(value_text,(ix+10,iy-14))
+                    elif i_value==50:
+                        screen.blit(value_text,(ix+5,iy-14))
+                    elif i_value==100:
+                        screen.blit(value_text,(ix-20,iy-14))
+                    else:
+                        screen.blit(value_text,(ix-10,iy-14))
+                    pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
+                for si in range(self.amax_2-180,(self.amin_2+180)+1,15):
+                    six=self.x-math.cos(math.radians(normalize360(si)))*15
+                    siy=self.y+math.sin(math.radians(normalize360(si)))*15
+                    pygame.draw.line(screen,(175,175,175),(self.x,self.y),(six,siy))
+                pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
                 ang = math.radians(self.value_to_angle(self.value))
                 ang_deg=math.degrees(ang)
-                self.last_switch_angle=ang
-            else:
-                ang=self.last_switch_angle
-                ang_deg=math.degrees(ang)
-            pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
-            finx=self.x+math.cos(math.radians(self.amax_1))*self.radius
-            finy=self.y-math.sin(math.radians(self.amax_1))*self.radius
-            sinx=self.x+math.cos(math.radians(self.amin_1))*self.radius
-            siny=self.y-math.sin(math.radians(self.amin_1))*self.radius
-            vinx=self.x+math.cos(ang)*(self.radius*0.225)
-            viny=self.y-math.sin(ang)*(self.radius*0.225)
-            left_vinx=self.x+math.cos(ang+0.5*(math.pi))*(self.radius*0.075)
-            left_viny=self.y-math.sin(ang+0.5*(math.pi))*(self.radius*0.075)
-            right_vinx=self.x+math.cos(ang+1.5*(math.pi))*(self.radius*0.075)
-            right_viny=self.y-math.sin(ang+1.5*(math.pi))*(self.radius*0.075)
-            
-            pygame.draw.line(screen,(200,200,200),(self.x,self.y),(finx,finy),3)
-            pygame.draw.line(screen,(200,200,200),(self.x,self.y),(sinx,siny),3)
-            
-            length = int(self.radius * 1.0)
-            w=9
-            pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
-            pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
-            rot=pygame.transform.rotate(pointer,ang_deg+90)
-            rect = rot.get_rect(center=(self.x, self.y))
-            screen.blit(rot,rect)
-            
-            pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
-            pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
-            self.on_marker.draw(screen)
-            self.off_marker.draw(screen)
-
-        elif self._type==2:
-            for i in range(self.amax_2-180,(self.amin_2+180)+1,60):
-                value_t=(i-(self.amax_2-180))/((self.amin_2+360)-(self.amax_2))
-                i_value=int(lerp(0,100,value_t))
-                value_text=dial_font.render(str(round(i_value,0)),True,(175,175,175))
-                ix=self.x-math.cos(math.radians(normalize360(i)))*28
-                iy=self.y+math.sin(math.radians(normalize360(i)))*28
-                if i_value<50:
-                    screen.blit(value_text,(ix+10,iy-14))
-                elif i_value==50:
-                    screen.blit(value_text,(ix+5,iy-14))
-                elif i_value==100:
-                    screen.blit(value_text,(ix-20,iy-14))
-                else:
-                    screen.blit(value_text,(ix-10,iy-14))
-                pygame.draw.line(screen,(175,175,175),(self.x,self.y),(ix,iy))
-            for si in range(self.amax_2-180,(self.amin_2+180)+1,15):
-                six=self.x-math.cos(math.radians(normalize360(si)))*15
-                siy=self.y+math.sin(math.radians(normalize360(si)))*15
-                pygame.draw.line(screen,(175,175,175),(self.x,self.y),(six,siy))
-            pygame.draw.circle(screen,(175,175,175),(self.x,self.y),10)
-            ang = math.radians(self.value_to_angle(self.value))
-            ang_deg=math.degrees(ang)
-            spoke_radius = int(self.radius * 1.08)
-            finx=self.x+math.cos(math.radians(self.amax_2))*spoke_radius
-            finy=self.y-math.sin(math.radians(self.amax_2))*spoke_radius
-            sinx=self.x+math.cos(math.radians(self.amin_2))*spoke_radius
-            siny=self.y-math.sin(math.radians(self.amin_2))*spoke_radius
-            minx=self.x+math.cos(math.radians(self.amid))*spoke_radius
-            miny=self.y-math.sin(math.radians(self.amid))*spoke_radius
-            vinx=self.x+math.cos(ang)*(self.radius*0.225)
-            viny=self.y-math.sin(ang)*(self.radius*0.225)
-            left_vinx=self.x+math.cos(ang+0.5*(math.pi))*(self.radius*0.075)
-            left_viny=self.y-math.sin(ang+0.5*(math.pi))*(self.radius*0.075)
-            right_vinx=self.x+math.cos(ang+1.5*(math.pi))*(self.radius*0.075)
-            right_viny=self.y-math.sin(ang+1.5*(math.pi))*(self.radius*0.075)
-            
-            pygame.draw.line(screen,(185,185,185),(self.x,self.y),(finx,finy),2)
-            pygame.draw.line(screen,(185,185,185),(self.x,self.y),(sinx,siny),2)
-            pygame.draw.line(screen,(185,185,185),(self.x,self.y),(minx,miny),2)
-            
-            length = int(self.radius * 1.0)
-            w=9
-            pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
-            pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
-            rot=pygame.transform.rotate(pointer,ang_deg+90)
-            rect = rot.get_rect(center=(self.x, self.y))
-            screen.blit(rot,rect)
-            
-            pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
-            pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
+                spoke_radius = int(self.radius * 1.08)
+                finx=self.x+math.cos(math.radians(self.amax_2))*spoke_radius
+                finy=self.y-math.sin(math.radians(self.amax_2))*spoke_radius
+                sinx=self.x+math.cos(math.radians(self.amin_2))*spoke_radius
+                siny=self.y-math.sin(math.radians(self.amin_2))*spoke_radius
+                minx=self.x+math.cos(math.radians(self.amid))*spoke_radius
+                miny=self.y-math.sin(math.radians(self.amid))*spoke_radius
+                vinx=self.x+math.cos(ang)*(self.radius*0.225)
+                viny=self.y-math.sin(ang)*(self.radius*0.225)
+                left_vinx=self.x+math.cos(ang+0.5*(math.pi))*(self.radius*0.075)
+                left_viny=self.y-math.sin(ang+0.5*(math.pi))*(self.radius*0.075)
+                right_vinx=self.x+math.cos(ang+1.5*(math.pi))*(self.radius*0.075)
+                right_viny=self.y-math.sin(ang+1.5*(math.pi))*(self.radius*0.075)
+                
+                pygame.draw.line(screen,(185,185,185),(self.x,self.y),(finx,finy),2)
+                pygame.draw.line(screen,(185,185,185),(self.x,self.y),(sinx,siny),2)
+                pygame.draw.line(screen,(185,185,185),(self.x,self.y),(minx,miny),2)
+                
+                length = int(self.radius * 1.0)
+                w=9
+                pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
+                pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
+                rot=pygame.transform.rotate(pointer,ang_deg+90)
+                rect = rot.get_rect(center=(self.x, self.y))
+                screen.blit(rot,rect)
+                
+                pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
+                pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
 
     def handle_event(self,e):
         if self.panel_number!=current_control_panel:
             self.is_dragging=False
-        if comparison_control_panel!=current_control_panel:
-            sm.style_multiplier*=self.freshness
-            self.freshness-=0.7
-            for knob in knobs:
-                if self.name==knob.name:
-                    continue
-                else:
-                    knob.freshness+=0.5
-                    knob.freshness=clamp(knob.freshness,0,1.5)
-                    CR_throttle.freshness+=0.5
-                    CR_throttle.freshness=clamp(CR_throttle.freshness,0,1.5)
-            self.last_released_value=self.value
-            self.last_released_time=pygame.time.get_ticks()
-            sm.add_style_log(sm.style[7])
-            juggle_history.append({"time":self.last_released_time})
-            dial_drag_cancel_sound.play()
-            self.is_dragging=False
+            if abs(self.value-self.last_released_value) > 1e-6:
+                sm.style_multiplier*=self.freshness
+                self.freshness-=0.7
+                for knob in knobs:
+                    if self.name==knob.name:
+                        continue
+                    else:
+                        knob.freshness+=0.5
+                        knob.freshness=clamp(knob.freshness,0,1.5)
+                        CR_throttle.freshness+=0.5
+                        CR_throttle.freshness=clamp(CR_throttle.freshness,0,1.5)
+                self.last_released_value=self.value
+                self.last_released_time=pygame.time.get_ticks()
+                juggle_history.append({"time":self.last_released_time})
+                dial_drag_cancel_sound.play()
         if e.type==pygame.MOUSEBUTTONUP and e.button==1:
             if self.is_dragging:
                 if abs(self.value-self.last_released_value) > 1e-6:
@@ -1037,6 +1036,7 @@ class Turbine:
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
         self.boiling_point=100*math.log10(9+self.pressure**2.9)
+last_knob_name=None
 juggle_history=[]
 cell_temp_total=0
 all_cell_temp=[]
@@ -1120,8 +1120,7 @@ while running:
             running = False
         plant_terminal.handle_event(e)
         for knob in knobs:
-            if current_control_panel==1:
-                knob.handle_event(e)
+            knob.handle_event(e)
         if current_control_panel==1:
             CR_throttle.handle_event(e)
         for button in buttons:
@@ -1139,6 +1138,7 @@ while running:
                     if button.name in AREA_BUTTON_NAMES:
                         button.toggle = True
     current_control_panel=clamp(current_control_panel,1,4)
+    comparison_control_panel=current_control_panel
     all_cell_temp.clear()
     for row in grid:
         for cell in row:
@@ -1195,8 +1195,7 @@ while running:
     if current_control_panel==1:
         CR_throttle.draw(screen)
     for knob in knobs:
-        if current_control_panel==1:
-            knob.draw(screen)
+        knob.draw(screen)
     reactor.update()
     sg.update()
     turbine.update()
@@ -1207,7 +1206,6 @@ while running:
     boiling_point_meter.update()
     if current_control_panel==1:
         boiling_point_meter.draw(screen)
-    comparison_control_panel=current_control_panel
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
