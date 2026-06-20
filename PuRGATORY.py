@@ -209,7 +209,7 @@ class StyleManager:
             {"name": "RECKLESS","score":5}
         ]
         self.earned_style = 0
-        self.style_rank = ["DULL","CHERENKOV","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","NUCLEAR"]
+        self.style_rank = ["DULL","CHERENKOV","BADASS","ADRENALINE","SURREAL","SSUPERB","SSSUPERCRITICAL","PURGATORY"]
         self.current_rank=None
         self.style_multiplier = 1
         self.rank_dur = 100
