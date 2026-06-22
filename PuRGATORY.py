@@ -520,8 +520,9 @@ class PlayerManager:
         self.payout=0
         self.wealth=120
         self.fired=False
-    def update(self):
-        pass #for now
+    def update(self,style,max_style,min_style):
+        self.hard=(self.max_health-self.min_health)-self.health
+        self.health=lerp(self.health,self.max_health*(style-min_style)/(max_style-min_style),dt if self.health<=self.hard else dt*0.001)
 class Meter:
     def __init__(self,x,y,w,h,value,min_value,max_value,timeline_length):
         self.x=x
