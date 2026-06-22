@@ -193,7 +193,6 @@ class Button:
                 color = (200, 0, 0)
             pygame.draw.rect(screen, color, (self.x, self.y, type_4_w, type_4_h))
             pygame.draw.rect(screen, (30, 30, 30), (self.x, self.y, type_4_w, type_4_h), 2)
-
 class StyleManager:
     def __init__(self):
         self.total_style = 0
@@ -512,6 +511,17 @@ class Knob:
     def hit_test(self,mx,my):
         rr=(self.radius+self.hitpad)**2
         return (mx-self.x)**2+(my-self.y)**2<=rr
+class PlayerManager:
+    def __init__(self):
+        self.hard=0
+        self.health=100
+        self.max_health=100
+        self.min_health=0
+        self.payout=0
+        self.wealth=120
+        self.fired=False
+    def update(self):
+        pass #for now
 class Meter:
     def __init__(self,x,y,w,h,value,min_value,max_value,timeline_length):
         self.x=x
