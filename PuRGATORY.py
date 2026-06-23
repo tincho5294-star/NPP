@@ -515,6 +515,7 @@ class PlayerManager:
     def __init__(self):
         self.hard=0
         self.health=100
+        self.next_health=100
         self.max_health=100
         self.min_health=0
         self.payout=0
@@ -523,7 +524,8 @@ class PlayerManager:
     def update(self,style,max_style,min_style):
         self.hard=(self.max_health-self.min_health)-self.health
         target_health=self.max_health*((style-min_style)/(max_style-min_style))
-        self.health=lerp(self.health,target_health,dt/(1+(self.hard/100)) if target_health>=((self.max_health-self.min_health)-self.hard) else dt)
+        self.health=lerp(self.health,self.next_health,dt)
+        self.next_health=lerp(self.health,target_health,dt)
 class Meter:
     def __init__(self,x,y,w,h,value,min_value,max_value,timeline_length):
         self.x=x
