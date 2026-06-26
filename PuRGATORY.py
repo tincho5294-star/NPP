@@ -543,16 +543,13 @@ class Meter:
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
         return lerp((self.y+self.h),self.y,value_ratio)
     def time_to_x(self,time):
-        time_ratio=clamp((time/self.timeline_length),0,1)
+        time_ratio=min((time-max((self.latest_time-self.timeline_length),0))/(self.timeline_length-max((self.latest_time-self.timeline_length),0)),1)
         return lerp(self.x,(self.x+self.w),time_ratio)
     def update(self):
         self.latest_time+=dt
         if self.value>=self.max_value:
             self.max_value=self.value
         self.points.append({"time":self.latest_time,"value":self.value})
-        if self.latest_time>=self.timeline_length:
-            self.latest_time=0
-            self.points.clear()
         self.value_surface=meter_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
         pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+30,self.h+10))
@@ -564,7 +561,8 @@ class Meter:
         for p in self.points:
             py=self.value_to_y(p["value"])
             px=self.time_to_x(p["time"])
-            pygame.draw.circle(screen,(255, 140, 0),(px,py),1)
+            if self.latest_time-self.timeline_length<=p["time"]:
+                pygame.draw.circle(screen,(255, 140, 0),(px,py),1)
         screen.blit(self.value_surface,(self.x+self.w,self.value_to_y(self.value)))
         pygame.draw.line(screen,(255,100,0),(self.time_to_x(self.latest_time),self.value_to_y(self.value)),(self.x+self.w,self.value_to_y(self.value)))
 class Throttle:
