@@ -543,7 +543,7 @@ class Meter:
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
         return lerp((self.y+self.h),self.y,value_ratio)
     def time_to_x(self,time):
-        time_ratio=min((time-max((self.latest_time-self.timeline_length),0))/(self.timeline_length-max((self.latest_time-self.timeline_length),0)),1)
+        time_ratio=min((time-max((self.latest_time-self.timeline_length),0))/(self.timeline_length),1)
         return lerp(self.x,(self.x+self.w),time_ratio)
     def update(self):
         self.latest_time+=dt
