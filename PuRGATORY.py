@@ -863,6 +863,9 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=0.2
+        for sector in self.core.sectors:
+            if self.Area==sector["name"]:
+                self.sector=sector
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
@@ -890,10 +893,10 @@ class GridCell:
         pygame.draw.rect(screen,(30,30,30),(self.x,self.y,w,h))
         pygame.draw.rect(screen,self.color,(self.x,self.y,w-2,h-2))
     def update(self):
-        for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.1,dt)
         if self.Area is None:
             return
+        for n in self.neighbors:
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.1,dt)
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.core.water_level/7000)*0.1))*(1.85-self.core.water_density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
@@ -920,7 +923,8 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp,self.core.water_temp=heat_exchange(self.next_temp,self.core.water_temp,0.016*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
+        if self.sector is not None:
+            self.next_temp,self.sector["Wtemp"]=heat_exchange(self.next_temp,self.sector["Wtemp"],0.016*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -962,6 +966,14 @@ class Reactor:
         self.water_density=0
         self.circ_water_mass=0
         self.void_temp=20
+        self.sectors=[{"name":"A","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"B","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"C","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"D","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"E","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"F","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"G","Wtemp":20,"pressure":15,"avgtemp":20},
+                      {"name":"H","Wtemp":20,"pressure":15,"avgtemp":20}]
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -969,16 +981,16 @@ class Reactor:
         self.fine_sprinkler=knobs[3].value
         self.coolant_flow_rate=knobs[4].value
         circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
-
-        self.water_mass+=450*(knobs[8].value/100)*dt
-        self.water_mass-=450*(knobs[9].value/100)*dt
+        if self.circ_water_mass>0:
+            self.water_mass+=450*(knobs[8].value/100)*dt
+        if self.circ_water_mass<1000:
+            self.water_mass-=450*(knobs[9].value/100)*dt
         if not math.isfinite(self.water_mass):
             self.water_mass=7000
         self.water_mass=clamp(self.water_mass,0,7000)
-
         self.circ_water_mass+=(450*(knobs[9].value/100))*dt
         self.circ_water_mass-=(450*(knobs[8].value/100))*dt
-        self.circ_water_mass=clamp(self.circ_water_mass,0,250)
+        self.circ_water_mass=clamp(self.circ_water_mass,0,1000)
 
         self.water_level=(self.water_mass+(self.water_temp/20))
         self.water_level=clamp(self.water_level,0,7000)
@@ -1001,11 +1013,26 @@ class Reactor:
 
         self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp+20*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
         self.pressurizer_temp=lerp(self.pressurizer_temp,20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))*dt)
-        self.pressure=(self.pressurizer_temp*((self.water_mass*self.water_temp)/700000))/20
-        self.boiling_point=100*math.log10(9+self.pressure**2.9)
+        self.pressure=(self.pressurizer_temp*(((self.water_mass+(self.void*1600))*self.water_temp)/700000))/20
+        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real))
         self.boiling=self.avg_temp>self.boiling_point
-        self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.032,dt)
-        self.void,self.water_mass=heat_exchange(self.void,self.water_mass,0.032*abs(self.water_temp-self.void_temp),dt)
+        self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.016,dt)
+        if not self.boiling:
+            self.void_temp=self.water_temp
+        evaporation=0.1*self.water_temp
+        condensation=0.02*self.pressure*self.void
+        self.void+=evaporation-condensation
+        self.water_mass=7000-self.void
+        for i in range(8):
+            f_sector=self.sectors[i-1] if i>0 else self.sectors[i+7]
+            s_sector=self.sectors[i]
+            t_sector=self.sectors[i+1] if i<7 else self.sectors[0]
+            for r in self.sectors:
+                if r!=f_sector and r!=s_sector and r!=t_sector:
+                    r["Wtemp"],s_sector["Wtemp"]=heat_exchange(r["Wtemp"],s_sector["Wtemp"],(0.016/6)*(0.1+(self.coolant_flow_rate*0.9)),dt)
+            f_sector["Wtemp"],s_sector["Wtemp"]=heat_exchange(f_sector["Wtemp"],s_sector["Wtemp"],0.016*(0.1+(self.coolant_flow_rate*0.9)),dt)
+            s_sector["Wtemp"],t_sector["Wtemp"]=heat_exchange(s_sector["Wtemp"],t_sector["Wtemp"],0.016*(0.1+(self.coolant_flow_rate*0.9)),dt)
+            
 class Pump:
     def __init__(self):
         self.force=0
@@ -1047,7 +1074,7 @@ class Turbine:
         self.RPM=lerp(self.RPM,self.force,dt)
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
-        self.boiling_point=100*math.log10(9+self.pressure**2.9)
+        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.9)
 last_knob_name=None
 juggle_history=[]
 cell_temp_total=0
@@ -1068,6 +1095,8 @@ core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
 boiling_point_meter=Meter(60,100,150,80,50,0,200,40)
+water_level_meter=Meter(60,10,150,80,50,0,7000,40)
+void_meter=Meter(60,190,150,80,50,0,80,40)
 for iy in range(grid_size):
     row=[]
     for ix in range(grid_size):
@@ -1216,8 +1245,14 @@ while running:
     plant_terminal.draw(screen)
     boiling_point_meter.value=reactor.boiling_point
     boiling_point_meter.update()
+    water_level_meter.value=reactor.water_level
+    water_level_meter.update()
+    void_meter.value=reactor.void
+    void_meter.update()
     if current_control_panel==1:
         boiling_point_meter.draw(screen)
+        water_level_meter.draw(screen)
+        void_meter.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
