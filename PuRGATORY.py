@@ -866,9 +866,6 @@ class GridCell:
         self.next_neutrons=1
         self.neutron_speed=0.2
         self.w_cell=GridCell.WaterCell(self,ix,iy,core,area)
-        for sector in self.core.sectors:
-            if self.Area==sector["name"]:
-                self.sector=sector
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
@@ -999,14 +996,6 @@ class Reactor:
         self.water_density=0
         self.circ_water_mass=0
         self.void_temp=20
-        self.sectors=[{"name":"A","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"B","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"C","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"D","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"E","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"F","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"G","Wtemp":20,"pressure":15,"avgtemp":20},
-                      {"name":"H","Wtemp":20,"pressure":15,"avgtemp":20}]
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -1056,15 +1045,6 @@ class Reactor:
         condensation=0.02*self.pressure*self.void
         self.void+=evaporation-condensation
         self.water_mass=7000-self.void
-        for i in range(8):
-            f_sector=self.sectors[i-1]
-            s_sector=self.sectors[i]
-            t_sector=self.sectors[i+1] if i<7 else self.sectors[0]
-            for r in self.sectors:
-                if r!=f_sector and r!=s_sector and r!=t_sector:
-                    r["Wtemp"],s_sector["Wtemp"]=heat_exchange(r["Wtemp"],s_sector["Wtemp"],(0.016/6)*(0.1+(self.coolant_flow_rate*0.9)),dt)
-            f_sector["Wtemp"],s_sector["Wtemp"]=heat_exchange(f_sector["Wtemp"],s_sector["Wtemp"],0.016*(0.1+(self.coolant_flow_rate*0.9)),dt)
-            s_sector["Wtemp"],t_sector["Wtemp"]=heat_exchange(s_sector["Wtemp"],t_sector["Wtemp"],0.016*(0.1+(self.coolant_flow_rate*0.9)),dt)
             
 class Pump:
     def __init__(self):
