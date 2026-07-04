@@ -1,4 +1,6 @@
 ﻿#lil goofy school project ahh looking project
+#"Excuse me SON"
+#https://x.com/jotaein133124
 import pygame
 import time
 import sys
@@ -863,6 +865,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=0.2
+        self.w_cell=GridCell.WaterCell(self,ix,iy,core,area)
         for sector in self.core.sectors:
             if self.Area==sector["name"]:
                 self.sector=sector
@@ -923,8 +926,6 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        if self.sector is not None:
-            self.next_temp,self.sector["Wtemp"]=heat_exchange(self.next_temp,self.sector["Wtemp"],0.016*((0.1+self.core.coolant_flow_rate*0.9)*(self.core.water_mass/7000)),dt)
         if not math.isfinite(self.core.water_temp):
             self.core.water_temp=20
         if not math.isfinite(self.next_temp):
@@ -937,6 +938,38 @@ class GridCell:
         xenon_decay=self.xenon*0.0025*dt
         self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
+    class WaterCell: #tbh i dont think i need this class but whatever bro
+        def __init__(self,gridcell,ix,iy,reactor,area):
+            self.search_size=20
+            self.temp=20
+            self.mass=1
+            self.level=1
+            self.neighbors=[]
+            self.ix=ix
+            self.iy=iy
+            self.core=reactor
+            self.owner=gridcell
+            self.area=area
+        def get_neighbor(self):
+            if self.area is None:
+                return
+            directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                
+            for dx, dy in directions:
+                nx = self.ix + dx
+                ny = self.iy + dy
+                    
+                if 0 <= nx < self.search_size and 0 <= ny < self.search_size:
+                    neighbor=water_grid[ny][nx]
+                    if neighbor.area is not None:
+                        self.neighbors.append(neighbor)
+        def update(self):
+            if self.area is not None:
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*((0.1+(self.owner.core.coolant_flow_rate*0.9))*self.level),dt)
+                for n in self.neighbors:
+                    touching_area=(1-(abs(n.level-self.level)))
+                    self.temp,n.temp=heat_exchange(self.temp,n.temp,0.016*((0.1+(self.owner.core.coolant_flow_rate*0.9))*touching_area),dt)
+                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.9+(self.owner.core.coolant_flow_rate*0.1),dt)
 class Reactor:
     def __init__(self,name):
         self.name=name
@@ -1024,7 +1057,7 @@ class Reactor:
         self.void+=evaporation-condensation
         self.water_mass=7000-self.void
         for i in range(8):
-            f_sector=self.sectors[i-1] if i>0 else self.sectors[i+7]
+            f_sector=self.sectors[i-1]
             s_sector=self.sectors[i]
             t_sector=self.sectors[i+1] if i<7 else self.sectors[0]
             for r in self.sectors:
@@ -1087,6 +1120,7 @@ reactor=Reactor("default")
 sg=SteamGenerator(reactor,"default")
 turbine=Turbine(sg)
 grid=[]
+water_grid=[]
 grid_size=20
 cell_size=10
 grid_origin_x=300
@@ -1099,6 +1133,7 @@ water_level_meter=Meter(60,10,150,80,50,0,7000,40)
 void_meter=Meter(60,190,150,80,50,0,80,40)
 for iy in range(grid_size):
     row=[]
+    water_row=[]
     for ix in range(grid_size):
         x=grid_origin_x+(ix*cell_size)
         y=grid_origin_y+(iy*cell_size)
@@ -1110,15 +1145,19 @@ for iy in range(grid_size):
         else:
             area=None
         cell=GridCell(x,y,ix,iy,area,reactor)
+        w_cell=GridCell.WaterCell(cell,ix,iy,reactor,area)
         if area is None:
             cell.uranium_mass=0.0
             cell.neutron=0.0
+        water_row.append(w_cell)
         row.append(cell)
+        water_row.append(w_cell)
     grid.append(row)
-
+    water_grid.append(water_row)
 for row in grid:
     for cell in row:
         cell.get_neighbor()
+        cell.w_cell.get_neighbor()
 pygame.init()
 screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("Knob Test")
@@ -1184,6 +1223,7 @@ while running:
     for row in grid:
         for cell in row:
             cell.update()
+            cell.w_cell.update()
 
     for button in buttons:
         if current_control_panel==1:
