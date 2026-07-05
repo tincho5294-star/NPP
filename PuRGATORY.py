@@ -905,7 +905,7 @@ class GridCell:
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.1))
+        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
         self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt*2)
         if not math.isfinite(self.next_neutrons):
@@ -1026,8 +1026,8 @@ class Reactor:
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * (self.water_mass/7000)
         max_saturation=clamp(max_saturation,0,1)
 
-        self.boron+=450*((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))*dt))
-        self.precipitated_boron+=450*(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation))*dt)
+        self.boron+=450*((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))))*dt
+        self.precipitated_boron+=max((450*(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation)))*dt),0)
         self.boron=clamp(self.boron,0,7000)
 
         self.boron_conc=self.boron/self.water_mass
