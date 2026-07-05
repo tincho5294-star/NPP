@@ -865,7 +865,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=0.2
-        self.w_cell=GridCell.WaterCell(self,ix,iy,core,area)
+        self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,core,area)
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
@@ -936,17 +936,21 @@ class GridCell:
         self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
     class WaterCell: #tbh i dont think i need this class but whatever bro
-        def __init__(self,gridcell,ix,iy,reactor,area):
+        def __init__(self,x,y,gridcell,ix,iy,reactor,area):
             self.search_size=20
             self.temp=20
             self.mass=1
             self.level=1
             self.neighbors=[]
+            self.x=x
+            self.y=y
             self.ix=ix
             self.iy=iy
             self.core=reactor
             self.owner=gridcell
             self.area=area
+            self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
+            self.max_level=self.max_mass
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -962,11 +966,13 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*((0.1+(self.owner.core.coolant_flow_rate*0.9))*self.level),dt)
+                self.max_mass=clamp(self.max_mass,0,7000)
+                self.max_level=clamp(self.max_level,0,7000)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*((0.1+((self.owner.core.coolant_flow_rate*0.9)/100))*self.level),dt)
                 for n in self.neighbors:
-                    touching_area=(1-(abs(n.level-self.level)))
-                    self.temp,n.temp=heat_exchange(self.temp,n.temp,0.016*((0.1+(self.owner.core.coolant_flow_rate*0.9))*touching_area),dt)
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.9+(self.owner.core.coolant_flow_rate*0.1),dt)
+                    touching_area=(7000-(abs(n.level-self.level)))
+                    self.temp,n.temp=heat_exchange(self.temp,n.temp,0.016*((0.1+(((self.owner.core.coolant_flow_rate/100)*0.9)))*(touching_area/7000)),dt)
+                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
 class Reactor:
     def __init__(self,name):
         self.name=name
@@ -1020,8 +1026,8 @@ class Reactor:
         max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * (self.water_mass/7000)
         max_saturation=clamp(max_saturation,0,1)
 
-        self.boron+=((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))*dt))
-        self.precipitated_boron+=(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation))*dt)
+        self.boron+=450*((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))*dt))
+        self.precipitated_boron+=450*(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation))*dt)
         self.boron=clamp(self.boron,0,7000)
 
         self.boron_conc=self.boron/self.water_mass
@@ -1125,7 +1131,7 @@ for iy in range(grid_size):
         else:
             area=None
         cell=GridCell(x,y,ix,iy,area,reactor)
-        w_cell=GridCell.WaterCell(cell,ix,iy,reactor,area)
+        w_cell=GridCell.WaterCell(x,y,cell,ix,iy,reactor,area)
         if area is None:
             cell.uranium_mass=0.0
             cell.neutron=0.0
