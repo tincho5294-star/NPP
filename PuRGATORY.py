@@ -1131,13 +1131,11 @@ for iy in range(grid_size):
         else:
             area=None
         cell=GridCell(x,y,ix,iy,area,reactor)
-        w_cell=GridCell.WaterCell(x,y,cell,ix,iy,reactor,area)
         if area is None:
             cell.uranium_mass=0.0
             cell.neutron=0.0
-        water_row.append(w_cell)
+        water_row.append(cell.w_cell)
         row.append(cell)
-        water_row.append(w_cell)
     grid.append(row)
     water_grid.append(water_row)
 for row in grid:
