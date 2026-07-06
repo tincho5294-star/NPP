@@ -1051,7 +1051,20 @@ class Reactor:
         condensation=0.02*self.pressure*self.void
         self.void+=evaporation-condensation
         self.water_mass=7000-self.void
-            
+        class CircSystems:    # ah shi here we go again
+            def __init__(self,parent_cell):
+                self.ix=ix
+                self.iy=iy
+                self.parent=parent_cell
+                self.flow_valve=1
+                self.makeup_tank_mass=120000
+                self.circ_mass=0
+                self.circ_pressure=1
+            def update(self):
+                if self.parent is not None and self.core is not None:
+                    self.circ_mass+=(450*(self.coolant_flow_rate/100))*dt     
+                    self.circ_mass-=(450*(self.coolant_flow_rate/100))*dt
+                    
 class Pump:
     def __init__(self):
         self.force=0
@@ -1102,9 +1115,6 @@ selected_area=[]
 AREA_BUTTON_NAMES = {"A", "B", "C", "D", "E", "F", "G", "H"}
 current_control_panel=1
 comparison_control_panel=1
-reactor=Reactor("default")
-sg=SteamGenerator(reactor,"default")
-turbine=Turbine(sg)
 grid=[]
 water_grid=[]
 grid_size=20
@@ -1117,6 +1127,9 @@ sector_names=["A","B","C","D","E","F","G","H"]
 boiling_point_meter=Meter(60,100,150,80,50,0,200,40)
 water_level_meter=Meter(60,10,150,80,50,0,7000,40)
 void_meter=Meter(60,190,150,80,50,0,80,40)
+reactor=Reactor("default")
+sg=SteamGenerator(reactor,"default")
+turbine=Turbine(sg)
 for iy in range(grid_size):
     row=[]
     water_row=[]
