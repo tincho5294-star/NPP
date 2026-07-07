@@ -206,7 +206,7 @@ class StyleManager:
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
             {"name": "JUGGLE", "score": 25},
-            {"name": "ONSET","score": 300},
+            {"name": "ONSET","score": 200},
             {"name": "RECKLESS","score":5}
         ]
         self.earned_style = 0
@@ -951,6 +951,7 @@ class GridCell:
             self.area=area
             self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
             self.max_level=self.max_mass
+            self.water_velocity=0
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1063,7 +1064,8 @@ class Reactor:
                 self.water_entry=[]
             def update(self):
                 if self.parent is not None:
-                    water_entry.append("content":(450*dt)*self.parent.water_velocity,)
+                    receiving=(450*dt)*self.parent.w_cell.water_velocity
+                    water_entry.append("content":receiving,)
                     
 class Pump:
     def __init__(self):
