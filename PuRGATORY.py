@@ -1060,10 +1060,10 @@ class Reactor:
                 self.makeup_tank_mass=120000
                 self.circ_mass=0
                 self.circ_pressure=1
+                self.water_entry=[]
             def update(self):
-                if self.parent is not None and self.core is not None:
-                    self.circ_mass+=(450*(self.coolant_flow_rate/100))*dt     
-                    self.circ_mass-=(450*(self.coolant_flow_rate/100))*dt
+                if self.parent is not None:
+                    water_entry.append("content":(450*dt)*self.parent.water_velocity,)
                     
 class Pump:
     def __init__(self):
