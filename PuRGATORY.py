@@ -1060,16 +1060,25 @@ class Reactor:
                 self.parent=parent_cell
                 self.flow_valve=1
                 self.makeup_tank_mass=120000
-                self.circ_mass=0
+                self.circ_mass=7000
                 self.circ_pressure=1
                 self.water_entry=[]
+                for p in range(626):
+                    step=p*(dt*0.1)
+                    prefilled_water={"amount":7000*dt,"velocity":0,"progress":step}
+                    self.water_entry.append(prefilled_water)
             def update(self):
                 if self.parent is not None:
                     receiving=(450*dt)*self.parent.w_cell.water_velocity if ((450*dt)*self.parent.w_cell.water_velocity)<=self.parent.w_cell.mass*dt else self.parent.w_cell.mass
                     self.parent.w_cell.mass=self.parent.w_cell.mass-receiving if receiving<=self.paret.w_cell.mass else 0
-                    self.water_entry.append("amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0)
-                    for p in self.water_entry:
-                        
+                    self.water_entry.append({"amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0})
+                    for i in range(len(self.water_entry)+1):
+                        previous=self.water_entry[(i-1)] if i>0 else None
+                        current=self.water_entry[i]
+                        later=self.water_entry[(i+1)] if i<625 else None
+                        if previous["progress"]-current["progress"]<=dt:
+                            previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],1,dt)
+                            
                     
 class Pump:
     def __init__(self):
