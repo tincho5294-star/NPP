@@ -1065,7 +1065,8 @@ class Reactor:
             def update(self):
                 if self.parent is not None:
                     receiving=(450*dt)*self.parent.w_cell.water_velocity
-                    water_entry.append("content":receiving,)
+                    self.parent.w_cell.mass=self.parent.w_cell.mass-receiving if receiving<=self.paret.w_cell.mass else 0
+                    water_entry.append("amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0)
                     
 class Pump:
     def __init__(self):
