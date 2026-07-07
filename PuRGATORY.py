@@ -1003,6 +1003,7 @@ class Reactor:
         self.water_density=0
         self.circ_water_mass=0
         self.void_temp=20
+        self.CircSys=Reactor.CircSystems(None)
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -1064,9 +1065,11 @@ class Reactor:
                 self.water_entry=[]
             def update(self):
                 if self.parent is not None:
-                    receiving=(450*dt)*self.parent.w_cell.water_velocity
+                    receiving=(450*dt)*self.parent.w_cell.water_velocity if ((450*dt)*self.parent.w_cell.water_velocity)<=self.parent.w_cell.mass*dt else self.parent.w_cell.mass
                     self.parent.w_cell.mass=self.parent.w_cell.mass-receiving if receiving<=self.paret.w_cell.mass else 0
-                    water_entry.append("amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0)
+                    self.water_entry.append("amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0)
+                    for p in self.water_entry:
+                        
                     
 class Pump:
     def __init__(self):
