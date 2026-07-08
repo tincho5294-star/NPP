@@ -1,4 +1,4 @@
-﻿#lil goofy school project ahh looking project
+#lil goofy school project ahh looking project
 #"Excuse me SON"
 #https://x.com/jotaein133124
 import pygame
@@ -1080,7 +1080,7 @@ class Reactor:
                             if abs(previous["progress"]-current["progress"])<=dt:
                                 previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],clamp(previous["velocity"]-current["velocity"],0,1),dt)
                             if abs(later["progress"]-current["progress"])<=dt:
-                                current["amount"],later["amount"]=heat_exchange(current["amount"],later["amount"],clamp(later["velocity"]-current["velocity"],0,1)*(later["progress"]-current["progress"]),dt)
+                                current["amount"],later["amount"]=heat_exchange(current["amount"],later["amount"],clamp(current["velocity"]-later["velocity"],0,1)*(dt-(later["progress"]-current["progress"])),dt)
                             
                     
 class Pump:
