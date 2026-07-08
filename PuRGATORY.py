@@ -1077,7 +1077,7 @@ class Reactor:
                         current=self.water_entry[i]
                         later=self.water_entry[(i+1)] if i<625 else None
                         if previous["progress"]-current["progress"]<=dt:
-                            previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],1,dt)
+                            previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],abs(current["velocity"]-previous["velocity"]),dt)
                             
                     
 class Pump:
