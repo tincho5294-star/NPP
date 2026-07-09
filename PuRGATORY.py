@@ -1079,9 +1079,9 @@ class Reactor:
                         if previous is not None and current is not None:
                             if abs(previous["progress"]-current["progress"])<=dt:
                                 previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],clamp(previous["velocity"]-current["velocity"],0,1),dt)
-                                previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],
+                                previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],clamp(previous["amount"]-current["amount",0,1)*
                             if abs(later["progress"]-current["progress"])<=dt:
-                                current["amount"],later["amount"]=heat_exchange(current["amount"],later["amount"],clamp(current["velocity"]-later["velocity"],0,1)*(dt-(later["progress"]-current["progress"])),dt)
+                                current["amount"],later["amount"]=heat_exchange(current["amount"],later["amount"],clamp(current["velocity"]-later["velocity"],0,1)*(1-((later["progress"]-current["progress"])*60)),dt)
                             
                     
 class Pump:
