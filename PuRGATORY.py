@@ -1075,7 +1075,7 @@ class Reactor:
                     for i in range(len(self.water_entry)+1):
                         previous=self.water_entry[(i-1)] if i>0 else None
                         current=self.water_entry[i]
-                        later=self.water_entry[(i+1)] if i<625 else None
+                        later=self.water_entry[(i+1)] if i<len(self.water_entry) else None
                         if previous is not None and current is not None:
                             if abs(previous["progress"]-current["progress"])<=dt:
                                 previous["amount"],current["amount"]=heat_exchange(previous["amount"],current["amount"],clamp(previous["velocity"]-current["velocity"],0,1),dt)
