@@ -1071,8 +1071,7 @@ class Reactor:
                 if self.parent is not None:
                     receiving=(450*dt)*self.parent.w_cell.water_velocity if ((450*dt)*self.parent.w_cell.water_velocity)<=self.parent.w_cell.mass*dt else self.parent.w_cell.mass
                     self.parent.w_cell.mass=self.parent.w_cell.mass-receiving if receiving<=self.paret.w_cell.mass else 0
-                    first=self.water_entry[0]
-                    first["amount"]+=receiving
+                    self.water_entry.append({"amount":receiving,"velocity":self.parent.w_cell.water_velocity,"progress":0})
                     for i in range(len(self.water_entry)+1):
                         previous=self.water_entry[(i-1)] if i>0 else None
                         current=self.water_entry[i]
