@@ -1072,7 +1072,8 @@ class Reactor:
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
                 for p in self.water_entry:
-                    pass
+                    if p["amount"]<=0:
+                        self.wate_entry.remove[p]
                 for i in range(len(self.water_entry)+1):
                     previous=self.water_entry[(i-1)] if i>0 else None
                     current=self.water_entry[i]
