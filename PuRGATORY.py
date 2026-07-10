@@ -1083,7 +1083,7 @@ class Reactor:
                             previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
                         if abs(later["progress"]-current["progress"])<=dt:
                             current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],(1/dt)*(dt-abs((later["progress"]-dt)-current["progress"])),dt)
-                            
+                            current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],(1/dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),dt)
                     
 class Pump:
     def __init__(self):
