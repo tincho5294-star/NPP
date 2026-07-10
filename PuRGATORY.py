@@ -1073,7 +1073,8 @@ class Reactor:
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
                 for p in self.water_entry:
                     if p["amount"]<=0:
-                        self.wate_entry.remove[p]
+                        self.water_entry.remove[p]
+                    pass
                 for i in range(len(self.water_entry)+1):
                     previous=self.water_entry[(i-1)] if i>0 else None
                     current=self.water_entry[i]
