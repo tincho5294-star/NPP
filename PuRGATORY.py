@@ -1057,7 +1057,9 @@ class Reactor:
         def __init__(self,entrance_cell,exit_cell):
             self.entrance=entrance_cell
             self.exit=exit_cell
-            self.flow_valve=1
+            self.inlet_valve=0
+            self.outlet_valve=0
+            self.coolant_flow_rate=0
             self.makeup_tank_mass=120000
             self.circ_mass=7000
             self.circ_pressure=1
@@ -1068,13 +1070,18 @@ class Reactor:
                 self.water_entry.append(prefilled_water)
         def update(self):
             if self.entrance is not None:
-                receiving=(450*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
+                receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
                 for p in self.water_entry:
+                    p["progress"]
+                    if p["progress"]>=1:
+                        self.exit_cell.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
+                        p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                     if p["amount"]<=0:
                         self.water_entry.remove[p]
-                    pass
+                    p["progress"]=clamp(p["progress"],0,1)
+                    p["amount"]=max(0,p["amount"])
                 for i in range(len(self.water_entry)+1):
                     previous=self.water_entry[(i-1)] if i>0 else None
                     current=self.water_entry[i]
@@ -1084,8 +1091,8 @@ class Reactor:
                             previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),dt)
                             previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
                         if abs(later["progress"]-current["progress"])<=dt:
-                            current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],(1/dt)*(dt-abs((later["progress"]-dt)-current["progress"])),dt)
-                            current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],(1/dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),dt)
+                            current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),dt)
+                            current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),dt)
                     
 class Pump:
     def __init__(self):
