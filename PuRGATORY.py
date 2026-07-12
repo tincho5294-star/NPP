@@ -1045,7 +1045,7 @@ class Reactor:
         self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp+20*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
         self.pressurizer_temp=lerp(self.pressurizer_temp,20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))*dt)
         self.pressure=(self.pressurizer_temp*(((self.water_mass+(self.void*1600))*self.water_temp)/700000))/20
-        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real))
+        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
         self.boiling=self.avg_temp>self.boiling_point
         self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.016,dt)
         if not self.boiling:
@@ -1080,18 +1080,17 @@ class Reactor:
                     if p["progress"]>=1:
                         self.exit.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                         p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
-                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.entrance.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
-                    if p["amount"]<=0:
-                        self.water_entry.remove(p)
+                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
                     p["progress"]=clamp(p["progress"],0,1)
                     p["amount"]=max(0,p["amount"])
+                self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
                 for i in range(len(self.water_entry)):
-                    previous=self.water_entry[(i-1)] if i>0 else None
+                    previous=self.water_entry[i-1] if i>0 else None
                     current=self.water_entry[i]
                     later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                     if previous is not None and current is not None:
                         if abs(previous["progress"]-current["progress"])<=dt:
-                            previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),dt)
+                            previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),dt)
                             previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
                     if later is not None and current is not None:
                         if abs(later["progress"]-current["progress"])<=dt:
