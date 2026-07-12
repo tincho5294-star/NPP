@@ -952,6 +952,7 @@ class GridCell:
             self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
             self.max_level=self.max_mass
             self.water_velocity=0
+            self.water_direction=math.radians(normalize360(360))
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1003,7 +1004,7 @@ class Reactor:
         self.water_density=0
         self.circ_water_mass=0
         self.void_temp=20
-        self.CircSys=Reactor.CircSystems(None)
+        self.CircSys=Reactor.CircSystems(None,None)
     def update(self):
         self.heater=knobs[0].value
         self.sprinkler=knobs[2].value
@@ -1057,8 +1058,8 @@ class Reactor:
         def __init__(self,entrance_cell,exit_cell):
             self.entrance=entrance_cell
             self.exit=exit_cell
-            self.inlet_valve=0
-            self.outlet_valve=0
+            self.inlet_valve=1
+            self.outlet_valve=1
             self.coolant_flow_rate=0
             self.makeup_tank_mass=120000
             self.circ_mass=7000
@@ -1066,40 +1067,45 @@ class Reactor:
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
-                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step}
+                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20}
                 self.water_entry.append(prefilled_water)
         def update(self):
             if self.entrance is not None:
+                self.coolant_flow_rate=pumps[0].force
                 receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
                 for p in self.water_entry:
-                    p["progress"]
+                    p["progress"]+=(1/15)*p["velocity"]
                     if p["progress"]>=1:
-                        self.exit_cell.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
+                        self.exit.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                         p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
+                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.entrance.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
                     if p["amount"]<=0:
-                        self.water_entry.remove[p]
+                        self.water_entry.remove(p)
                     p["progress"]=clamp(p["progress"],0,1)
                     p["amount"]=max(0,p["amount"])
-                for i in range(len(self.water_entry)+1):
+                for i in range(len(self.water_entry)):
                     previous=self.water_entry[(i-1)] if i>0 else None
                     current=self.water_entry[i]
-                    later=self.water_entry[(i+1)] if i<len(self.water_entry) else None
+                    later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                     if previous is not None and current is not None:
                         if abs(previous["progress"]-current["progress"])<=dt:
                             previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),dt)
-                            previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],(1/dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
+                            previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
+                    if later is not None and current is not None:
                         if abs(later["progress"]-current["progress"])<=dt:
                             current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),dt)
                             current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),dt)
                     
 class Pump:
-    def __init__(self):
+    def __init__(self,name,parent_knob):
         self.force=0
-        self.toggle=False
+        self.parent_knob=parent_knob
+        self.toggle=True #TODO: gotta make parent toggle knob somewhere i think
     def update(self):
-        self.force=lerp(self.force,1 if self.toggle else 0,dt*2 if self.toggle else dt)
+        target_force=(self.parent_knob.value/100)
+        self.force=lerp(self.force,target_force if self.toggle else 0,dt*2 if self.toggle else dt)
 class SteamGenerator:
     def __init__(self,core,name):
         self.name=name
@@ -1184,6 +1190,12 @@ for row in grid:
     for cell in row:
         cell.get_neighbor()
         cell.w_cell.get_neighbor()
+for row in grid:
+    for cell in row:
+        if cell.iy==8 and cell.ix==16:
+            reactor.CircSys.entrance=cell
+        if cell.iy==8 and cell.ix==0:
+            reactor.CircSys.exit=cell
 pygame.init()
 screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("Knob Test")
@@ -1217,6 +1229,9 @@ buttons = [
     Button(610, 510, "H", 3, toggle=False, ready=True),
     Button(490, 530, "ALL", 4, toggle=False, ready=True),
     Button(700, 530, "test", 2, toggle=False, ready=True)
+]
+pumps=[
+    Pump("RCP",knobs[4])
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
@@ -1303,7 +1318,10 @@ while running:
         CR_throttle.draw(screen)
     for knob in knobs:
         knob.draw(screen)
+    for pump in pumps:
+        pump.update()
     reactor.update()
+    reactor.CircSys.update()
     sg.update()
     turbine.update()
     sm.update()
