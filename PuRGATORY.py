@@ -970,10 +970,10 @@ class GridCell:
             if self.area is not None:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*((0.1+((self.owner.core.coolant_flow_rate*0.9)/100))*self.level),dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.owner.core.coolant_flow_rate*0.9)/100)*self.level,dt)
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
-                    self.temp,n.temp=heat_exchange(self.temp,n.temp,0.016*((0.1+(((self.owner.core.coolant_flow_rate/100)*0.9)))*(touching_area/7000)),dt)
+                    self.temp,n.temp=heat_exchange(self.temp,n.temp,(0.1+(((self.owner.core.coolant_flow_rate/100)*0.9)))*(touching_area/7000)),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
 class Reactor:
     def __init__(self,name):
