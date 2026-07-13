@@ -955,6 +955,7 @@ class GridCell:
             self.water_direction=math.radians(normalize360(360))
             self.offset_x=self.x+math.cos(self.water_direction)*(5*self.water_velocity)
             self.offset_y=self.y-math.sin(self.water_direction)*(5*self.water_velocity)
+            self.max_hypot=0
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -976,6 +977,7 @@ class GridCell:
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.owner.core.coolant_flow_rate*0.9)/100)*self.level,dt))
                 for n in self.neighbors:
+                    
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y)),dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y)),dt)
