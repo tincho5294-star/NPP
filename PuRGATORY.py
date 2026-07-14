@@ -975,7 +975,7 @@ class GridCell:
                 self.offset_y=self.y-math.sin(self.water_direction)*(5*self.water_velocity)
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.owner.core.coolant_flow_rate*0.9)/100)*self.level,dt))
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.owner.core.coolant_flow_rate*0.9)/100)*self.level),dt)
                 for n in self.neighbors:
                     
                     touching_area=(7000-(abs(n.level-self.level)))
@@ -983,6 +983,11 @@ class GridCell:
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.temp,n.temp=heat_exchange(self.temp,n.temp,(0.1+(((self.owner.core.coolant_flow_rate/100)*0.9)))*(touching_area/7000),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
+        def draw(self,screen):
+            center_x=self.x+5
+            center_y=self.y+5
+            L_ind_x=self.offset_x+math.cos(math.radians(normalize360(self.water_direction+30)))*(math.hypot(center_x,self.offset_x)-1.5)
+            L_ind_y=self.offset_y-math.sin(math.radians(normalize360(self.water_direction+30)))*(math.hypot(center_y,self.offset_y)-1.5)
 class Reactor:
     def __init__(self,name):
         self.name=name
