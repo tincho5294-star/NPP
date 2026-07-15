@@ -986,8 +986,8 @@ class GridCell:
         def draw(self,screen):
             center_x=self.x+5
             center_y=self.y+5
-            L_ind_x=self.offset_x+math.cos(math.radians(normalize360(self.water_direction+30)))*(math.hypot(center_x,self.offset_x)-1.5)
-            L_ind_y=self.offset_y-math.sin(math.radians(normalize360(self.water_direction+30)))*(math.hypot(center_y,self.offset_y)-1.5)
+            L_ind_x=self.offset_x+math.cos(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
+            L_ind_y=self.offset_y-math.sin(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
 class Reactor:
     def __init__(self,name):
         self.name=name
