@@ -953,8 +953,8 @@ class GridCell:
             self.max_level=self.max_mass
             self.water_velocity=0
             self.water_direction=math.radians(normalize360(360))
-            self.offset_x=self.x+math.cos(self.water_direction)*(5*self.water_velocity)
-            self.offset_y=self.y-math.sin(self.water_direction)*(5*self.water_velocity)
+            self.offset_x=(self.x+5)+math.cos(self.water_direction)*(5*self.water_velocity)
+            self.offset_y=(self.y+5)-math.sin(self.water_direction)*(5*self.water_velocity)
             self.max_hypot=math.hypot(5,20)
         def get_neighbor(self):
             if self.area is None:
@@ -986,6 +986,8 @@ class GridCell:
         def draw(self,screen):
             center_x=self.x+5
             center_y=self.y+5
+            offset_tail_x=center_x+math.cos(math.radians(normalize360(self.water_direction+180)))*(5*self.water_velocity)
+            offset_tail_y=center_y-math.sin(math.radians(normalize360(self.water_direction+180)))*(5*self.water_velocity
             L_ind_x=self.offset_x+math.cos(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
             L_ind_y=self.offset_y-math.sin(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
 class Reactor:
