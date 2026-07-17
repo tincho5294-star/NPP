@@ -876,7 +876,10 @@ class GridCell:
     def get_neighbor(self):
         if self.Area is None:
             return
-        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        directions = [
+            (0, 1), (0, -1), (1, 0), (-1, 0),
+            (1, 1), (1, -1), (-1, 1), (-1, -1)
+        ]
         
         for dx, dy in directions:
             nx = self.ix + dx
@@ -889,7 +892,7 @@ class GridCell:
     def draw(self,screen):
         if self.Area is None:
             return
-        w,h=10,10
+        w,h=15,15
         pygame.draw.rect(screen,(30,30,30),(self.x,self.y,w,h))
         pygame.draw.rect(screen,self.color,(self.x,self.y,w-2,h-2))
     def update(self):
@@ -952,14 +955,17 @@ class GridCell:
             self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
             self.max_level=self.max_mass
             self.water_velocity=0
-            self.water_direction=math.radians(normalize360(360))
-            self.offset_x=(self.x+5)+math.cos(self.water_direction)*(5*self.water_velocity)
-            self.offset_y=(self.y+5)-math.sin(self.water_direction)*(5*self.water_velocity)
-            self.max_hypot=math.hypot(5,20)
+            self.water_direction=normalize360(45)
+            self.offset_x=(self.x+7.5)+math.cos(math.radians(self.water_direction))*(7.5*self.water_velocity)
+            self.offset_y=(self.y+7.5)-math.sin(math.radians(self.water_direction))*(7.5*self.water_velocity)
+            self.max_hypot=math.hypot(7.5,30)
         def get_neighbor(self):
             if self.area is None:
                 return
-            directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+            directions = [
+                (0, 1), (0, -1), (1, 0), (-1, 0),
+                (1, 1), (1, -1), (-1, 1), (-1, -1)
+            ]
                 
             for dx, dy in directions:
                 nx = self.ix + dx
@@ -971,25 +977,26 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.offset_x=self.x+math.cos(self.water_direction)*(5*self.water_velocity)
-                self.offset_y=self.y-math.sin(self.water_direction)*(5*self.water_velocity)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.owner.core.coolant_flow_rate*0.9)/100)*self.level),dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*self.level),dt)
                 for n in self.neighbors:
-                    
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
-                    self.temp,n.temp=heat_exchange(self.temp,n.temp,(0.1+(((self.owner.core.coolant_flow_rate/100)*0.9)))*(touching_area/7000),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
         def draw(self,screen):
-            center_x=self.x+5
-            center_y=self.y+5
-            offset_tail_x=center_x+math.cos(math.radians(normalize360(self.water_direction+180)))*(5*self.water_velocity)
-            offset_tail_y=center_y-math.sin(math.radians(normalize360(self.water_direction+180)))*(5*self.water_velocity
-            L_ind_x=self.offset_x+math.cos(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
-            L_ind_y=self.offset_y-math.sin(math.radians(normalize360(self.water_direction+30)))*((5*self.water_velocity)-1.5)
+            if self.owner.Area is not None:
+                center_x=self.x+7.5
+                center_y=self.y+7.5
+                R=clamp(lerp(0,255,self.water_velocity),0,255)
+                G=0
+                B=0
+                color=(R,G,B)
+                pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
+                pygame.draw.line(screen,color,(center_x,center_y),(self.offset_x,self.offset_y))
 class Reactor:
     def __init__(self,name):
         self.name=name
@@ -1091,11 +1098,13 @@ class Reactor:
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
                 for p in self.water_entry:
+                    p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
                     p["progress"]+=(1/15)*p["velocity"]*dt
                     if p["progress"]>=1:
                         self.exit.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                         p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                         p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
+                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
                     p["progress"]=clamp(p["progress"],0,1)
                     p["amount"]=max(0,p["amount"])
                 self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
@@ -1167,9 +1176,9 @@ comparison_control_panel=1
 grid=[]
 water_grid=[]
 grid_size=20
-cell_size=10
-grid_origin_x=300
-grid_origin_y=50
+cell_size=15
+grid_origin_x=225
+grid_origin_y=-20
 core_center=(grid_size-1)/2
 core_radius=8
 sector_names=["A","B","C","D","E","F","G","H"]
@@ -1206,9 +1215,9 @@ for row in grid:
         cell.w_cell.get_neighbor()
 for row in grid:
     for cell in row:
-        if cell.iy==8 and cell.ix==16:
+        if cell.iy==10 and cell.ix==17:
             reactor.CircSys.entrance=cell
-        if cell.iy==8 and cell.ix==0:
+        if cell.iy==10 and cell.ix==2:
             reactor.CircSys.exit=cell
 pygame.init()
 screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
@@ -1296,6 +1305,7 @@ while running:
             if current_control_panel==1:
                 cell.get_color()
                 cell.draw(screen)
+                cell.w_cell.draw(screen)
     reactor.avg_temp=cell_temp_total/208
     selected_area.clear()
     for button in buttons:
