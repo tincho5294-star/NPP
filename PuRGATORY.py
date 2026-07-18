@@ -1086,7 +1086,7 @@ class Reactor:
             self.makeup_tank_mass=120000
             self.circ_mass=7000
             self.circ_pressure=1
-            self.CVCS_water=0
+            self.CVCS_entry=[]
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
