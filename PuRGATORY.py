@@ -981,7 +981,7 @@ class GridCell:
                 self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*self.level),dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*(0.1+((self.water_velocity*0.9)/100)*self.level),dt)
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
@@ -1086,6 +1086,7 @@ class Reactor:
             self.makeup_tank_mass=120000
             self.circ_mass=7000
             self.circ_pressure=1
+            self.CVCS_water=0
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
@@ -1094,6 +1095,7 @@ class Reactor:
         def update(self):
             if self.entrance is not None:
                 self.coolant_flow_rate=pumps[0].force
+                self.water_entry.append({"amount":7000*dt*(knobs[8].value/100) if self.CVCS_water>=7000*dt*(knobs[8].value/100) else self.CVCS_water,"velocity":0,"progress":0.7,"temp":20})
                 receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
@@ -1105,6 +1107,9 @@ class Reactor:
                         p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
                         p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
                         p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
+                    if (0.6-dt)<=p["progress"]<=(0.6+dt):
+                        p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
+                        self.CVCS_water=p["amount"]+(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else p["amount"]
                     p["progress"]=clamp(p["progress"],0,1)
                     p["amount"]=max(0,p["amount"])
                 self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
