@@ -1,5 +1,6 @@
 ﻿#lil goofy school project ahh looking project
 #"Excuse me SON"
+#"lets LARP. https://media.tenor.com/WO2nrHqW6n8AAAAe/ryu-ishigori-jjk.png"
 #https://x.com/jotaein133124
 import pygame
 import time
@@ -938,12 +939,10 @@ class GridCell:
         xenon_decay=self.xenon*0.0025*dt
         self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
-    class WaterCell: #tbh i dont think i need this class but whatever bro
+    class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,reactor,area):
             self.search_size=20
             self.temp=20
-            self.mass=1
-            self.level=1
             self.neighbors=[]
             self.x=x
             self.y=y
@@ -954,10 +953,14 @@ class GridCell:
             self.area=area
             self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
             self.max_level=self.max_mass
+            self.mass=self.max_mass
+            self.level=self.max_mass
             self.water_velocity=0
             self.water_direction=normalize360(45)
             self.offset_x=(self.x+7.5)+math.cos(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.offset_y=(self.y+7.5)-math.sin(math.radians(self.water_direction))*(7.5*self.water_velocity)
+            self.turbulence_intensity=0
+            self.viscosity=10/self.temp
             self.max_hypot=math.hypot(7.5,30)
         def get_neighbor(self):
             if self.area is None:
@@ -977,11 +980,15 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
+                self.viscosity=10/self.temp
+                D=0.01
+                reynolds=((self.water_velocity*5)*D)/self.viscosity
+                self.turbulence_intensity = 0.16 * (reynolds ** -0.125) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,0.016*(0.1+((self.water_velocity*0.9)/100)*self.level),dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.05*0.016*(0.1+((self.water_velocity*0.9)/100)*self.level))*self.turbulence_intensity,dt)
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
@@ -1095,7 +1102,6 @@ class Reactor:
         def update(self):
             if self.entrance is not None:
                 self.coolant_flow_rate=pumps[0].force
-                self.water_entry.append({"amount":7000*dt*(knobs[8].value/100) if self.CVCS_water>=7000*dt*(knobs[8].value/100) else self.CVCS_water,"velocity":0,"progress":0.7,"temp":20})
                 receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
                 self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
@@ -1109,7 +1115,6 @@ class Reactor:
                         p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
                     if (0.6-dt)<=p["progress"]<=(0.6+dt):
                         p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
-                        self.CVCS_water=p["amount"]+(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else p["amount"]
                     p["progress"]=clamp(p["progress"],0,1)
                     p["amount"]=max(0,p["amount"])
                 self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
