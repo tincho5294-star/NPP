@@ -7,6 +7,7 @@ import time
 import sys
 import math
 import random
+from collections import deque
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
@@ -542,7 +543,7 @@ class Meter:
         self.max_value=max_value
         self.latest_time=0
         self.value_surface=meter_font.render(str(round(self.value,1)),False,(255,140,0))
-        self.points=[]
+        self.points=deque()
     def value_to_y(self,value):
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
         return lerp((self.y+self.h),self.y,value_ratio)
@@ -554,6 +555,8 @@ class Meter:
         if self.value>=self.max_value:
             self.max_value=self.value
         self.points.append({"time":self.latest_time,"value":self.value})
+        while self.points and self.points[0]["time"] < self.latest_time-self.timeline_length:
+            self.points.popleft()
         self.value_surface=meter_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
         pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+30,self.h+10))
@@ -982,20 +985,15 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                oscillation=random.uniform(-1,1)
+                oscillation=random.uniform(-0.5,0.5)
                 self.viscosity=10/self.temp
                 D=0.01
                 reynolds=(((self.water_velocity*5)*D)/self.viscosity)*10000
-                try:
-                    self.turbulence_intensity = 0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
-                except ZeroDivisionError:
-                    self.turbulence_intensity=0
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
+                self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.water_direction=self.water_direction+(self.water_direction-self.last_water_direction+oscillation)*(self.turbulence_intensity*10)
+                self.water_direction=self.water_direction+(self.water_direction-self.last_water_direction+oscillation)*(self.turbulence_intensity*15)
                 self.last_water_direction=self.water_direction
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
@@ -1004,6 +1002,8 @@ class GridCell:
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
         def draw(self,screen):
             if self.owner.Area is not None:
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
