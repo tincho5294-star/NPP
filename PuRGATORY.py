@@ -6,6 +6,7 @@ import pygame
 import time
 import sys
 import math
+import random
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
@@ -956,11 +957,12 @@ class GridCell:
             self.mass=self.max_mass
             self.level=self.max_mass
             self.water_velocity=0
-            self.water_direction=normalize360(45)
+            self.water_direction=normalize360(360)
             self.offset_x=(self.x+7.5)+math.cos(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.offset_y=(self.y+7.5)-math.sin(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.turbulence_intensity=0
             self.viscosity=10/self.temp
+            self.last_water_direction=self.water_direction
             self.max_hypot=math.hypot(7.5,30)
         def get_neighbor(self):
             if self.area is None:
@@ -980,15 +982,21 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
+                oscillation=random.uniform(-1,1)
                 self.viscosity=10/self.temp
                 D=0.01
-                reynolds=((self.water_velocity*5)*D)/self.viscosity
-                self.turbulence_intensity = 0.16 * (reynolds ** -0.125) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
+                reynolds=(((self.water_velocity*5)*D)/self.viscosity)*10000
+                try:
+                    self.turbulence_intensity = 0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
+                except ZeroDivisionError:
+                    self.turbulence_intensity=0
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.05*0.016*(0.1+((self.water_velocity*0.9)/100)*self.level))*self.turbulence_intensity,dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
+                self.water_direction=self.water_direction+(self.water_direction-self.last_water_direction+oscillation)*(self.turbulence_intensity*10)
+                self.last_water_direction=self.water_direction
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
