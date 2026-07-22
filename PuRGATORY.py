@@ -2,6 +2,7 @@
 #"Excuse me SON"
 #"lets LARP. https://media.tenor.com/WO2nrHqW6n8AAAAe/ryu-ishigori-jjk.png"
 #https://x.com/jotaein133124
+#이 코드를 리뷰하려는자, 희망을 버려라.
 import pygame
 import time
 import sys
@@ -296,7 +297,7 @@ class Knob:
         self.last_sound_tick=None
         self.freshness=1.5
         self.last_released_value=self.value
-        self.last_released_time=pygame.time.get_ticks
+        self.last_released_time=pygame.time.get_ticks()
         self.panel_number=panel_number
         if self._type == 1:
             self.on_marker = Marker(self.x + 28, self.y - 6, owner=self, _type="on")
@@ -460,12 +461,12 @@ class Knob:
                 
                 length = int(self.radius * 1.0)
                 w=9
-                pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
-                pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
-                rot=pygame.transform.rotate(pointer,ang_deg+90)
-                rect = rot.get_rect(center=(self.x, self.y))
-                screen.blit(rot,rect)
-                
+                RCircleRadius=3
+                first_point=(self.x+math.cos(ang-math.radians(90))*(self.radius*0.05),self.y-math.sin(ang-math.radians(90))*(self.radius*0.025))
+                second_point=(self.x+math.cos(ang+math.radians(90))*(self.radius*0.05),self.y-math.sin(ang+math.radians(90))*(self.radius*0.025))
+                third_point=(self.x+math.cos(ang-math.radians(60))*(self.radius*0.05),self.y-math.sin(ang-math.radians(60))*9)
+                fourth_point=(self.x+math.cos(ang+math.radians(60))*(self.radius*0.05),self.y-math.sin(ang+math.radians(60))*9)
+                pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
                 pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
                 pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
 
