@@ -881,7 +881,7 @@ class GridCell:
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp((255*((2000-(self.temp*5))/500)),0,255)
-        B=0
+        B=clamp(255*(self.w_cell.pressure/20),0,255)
         if self.temp>400:
             R = clamp(255 * ((1500 - self.temp) / 1100), 0, 255)
         self.color=(R,G,B)
@@ -911,7 +911,7 @@ class GridCell:
         if self.Area is None:
             return
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,0.1,dt)
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,dt)
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.core.water_level/7000)*0.1))*(1.85-self.core.water_density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
@@ -974,6 +974,10 @@ class GridCell:
             self.viscosity=10/self.temp
             self.last_water_direction=self.water_direction
             self.max_hypot=math.hypot(7.5,30)
+            self.void=0
+            self.void_temp=self.temp
+            self.boiling_point=320
+            self.pressure=15
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1007,6 +1011,15 @@ class GridCell:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
+                self.boiling=self.temp>self.boiling_point
+                self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
+                if not self.boiling:
+                    self.void_temp=self.temp
+                evaporation=0.1*self.temp
+                condensation=0.02*self.pressure*self.void
+                self.void+=evaporation-condensation
+                self.pressure=(self.core.pressurizer_temp*(((self.mass+(self.void*1600))*self.temp)/700000))/20
+                self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
@@ -1091,12 +1104,6 @@ class Reactor:
         self.pressure=(self.pressurizer_temp*(((self.water_mass+(self.void*1600))*self.water_temp)/700000))/20
         self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
         self.boiling=self.avg_temp>self.boiling_point
-        self.void_temp,self.water_temp=heat_exchange(self.void_temp,self.water_temp,0.016,dt)
-        if not self.boiling:
-            self.void_temp=self.water_temp
-        evaporation=0.1*self.water_temp
-        condensation=0.02*self.pressure*self.void
-        self.void+=evaporation-condensation
         self.water_mass=7000-self.void
     class CircSystems:    # ah shi here we go again
         def __init__(self,entrance_cell,exit_cell):
