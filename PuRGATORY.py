@@ -3,6 +3,16 @@
 #"lets LARP. https://media.tenor.com/WO2nrHqW6n8AAAAe/ryu-ishigori-jjk.png"
 #https://x.com/jotaein133124
 #이 코드를 리뷰하려는자, 희망을 버려라.
+#조태인의 쌈@뽕 삐리깡뽕 한 개발 플리 
+#1. ULTRACHURCH https://www.youtube.com/watch?v=KTCC053fLqs&list=RDAchqe_GDUTM&index=2
+#2. Tenebre Rosso Sangue https://www.youtube.com/watch?v=L5q4uYj-gyg&list=RDL5q4uYj-gyg&start_radio=1
+#3. The Cybergrind https://www.youtube.com/watch?v=e9EqU9y69vU&list=RDe9EqU9y69vU&start_radio=1
+#4. WAR https://www.youtube.com/watch?v=kDqTB3fV3sw&list=RDkDqTB3fV3sw&start_radio=1
+#5. No Devil Lived On https://www.youtube.com/watch?v=_ysPpT7-f4o&list=RD_ysPpT7-f4o&start_radio=1
+#6. War Without Reason https://www.youtube.com/watch?v=Elj4zDLqJvw&list=RDElj4zDLqJvw&start_radio=1
+#7. Danse Macabre https://www.youtube.com/watch?v=AjGb1w88Lr0&list=RDAjGb1w88Lr0&start_radio=1
+#8. Event Horizon https://www.youtube.com/watch?v=_ysPpT7-f4o&list=RD_ysPpT7-f4o&start_radio=1
+#9. Closing Time https://www.youtube.com/watch?v=ikSUjsRBVtQ&list=RDikSUjsRBVtQ&start_radio=1
 import pygame
 import time
 import sys
@@ -407,12 +417,11 @@ class Knob:
                 
                 length = int(self.radius * 1.0)
                 w=9
-                pointer = pygame.Surface((length * 2, length * 2), pygame.SRCALPHA)
-                pygame.draw.rect(pointer,(60,60,60),(length - w // 2, 0,w,length),border_radius=3)
-                rot=pygame.transform.rotate(pointer,ang_deg+90)
-                rect = rot.get_rect(center=(self.x, self.y))
-                screen.blit(rot,rect)
-                
+                first_point=(self.x+math.cos((ang+math.pi)+0.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+0.5*math.pi)*(self.radius*0.1))
+                second_point=(self.x+math.cos((ang+math.pi)+1.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+1.5*math.pi)*(self.radius*0.1))
+                third_point=(self.x+math.cos((ang+math.pi)-math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)-math.pi/27)*self.radius)
+                fourth_point=(self.x+math.cos((ang+math.pi)+math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)+math.pi/27)*self.radius)
+                pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
                 pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
                 pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
                 self.on_marker.draw(screen)
@@ -458,14 +467,11 @@ class Knob:
                 pygame.draw.line(screen,(185,185,185),(self.x,self.y),(finx,finy),2)
                 pygame.draw.line(screen,(185,185,185),(self.x,self.y),(sinx,siny),2)
                 pygame.draw.line(screen,(185,185,185),(self.x,self.y),(minx,miny),2)
-                
-                length = int(self.radius * 1.0)
                 w=9
-                RCircleRadius=3
-                first_point=(self.x+math.cos(ang-math.radians(90))*(self.radius*0.05),self.y-math.sin(ang-math.radians(90))*(self.radius*0.025))
-                second_point=(self.x+math.cos(ang+math.radians(90))*(self.radius*0.05),self.y-math.sin(ang+math.radians(90))*(self.radius*0.025))
-                third_point=(self.x+math.cos(ang-math.radians(60))*(self.radius*0.05),self.y-math.sin(ang-math.radians(60))*9)
-                fourth_point=(self.x+math.cos(ang+math.radians(60))*(self.radius*0.05),self.y-math.sin(ang+math.radians(60))*9)
+                first_point=(self.x+math.cos((ang+math.pi)+0.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+0.5*math.pi)*(self.radius*0.1))
+                second_point=(self.x+math.cos((ang+math.pi)+1.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+1.5*math.pi)*(self.radius*0.1))
+                third_point=(self.x+math.cos((ang+math.pi)-math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)-math.pi/27)*self.radius)
+                fourth_point=(self.x+math.cos((ang+math.pi)+math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)+math.pi/27)*self.radius)
                 pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
                 pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
                 pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
