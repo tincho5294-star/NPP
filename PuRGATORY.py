@@ -1015,11 +1015,12 @@ class GridCell:
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                evaporation=0.1*self.temp
-                condensation=0.02*self.pressure*self.void
-                self.void+=evaporation-condensation
                 self.pressure=(self.core.pressurizer_temp*(((self.mass+(self.void*1600))*self.temp)/700000))/20
                 self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
+                evaporation=(0.1*self.temp)*dt
+                condensation=(0.02*self.pressure*self.void)*dt
+                self.void+=evaporation-condensation
+                self.mass-=evaporation-condensation
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
