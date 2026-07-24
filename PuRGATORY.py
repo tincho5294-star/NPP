@@ -880,7 +880,7 @@ class GridCell:
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,core,area)
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
-        G=clamp((255*((2000-(self.temp*5))/500)),0,255)
+        G=clamp(safe_div((255*((2000-(self.temp*5))/500)),(self.w_cell.pressure/20)),0,255)
         B=clamp(255*(self.w_cell.pressure/20),0,255)
         if self.temp>400:
             R = clamp(255 * ((1500 - self.temp) / 1100), 0, 255)
@@ -1015,12 +1015,11 @@ class GridCell:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
-                    n.pressure=self.pressure+((0.5*(self.density*1000))*(self.water_velocity**2-n.water_velocity**2))+((self.density*1000)*g)*((self.level/1000)-(n.level/1000))
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=(self.core.pressurizer_temp*(((self.mass+(self.void*1600))*self.temp)/700000))/20
+                self.pressure=((self.core.pressurizer_temp*(((self.mass+(self.void*1600))*self.temp)/700000))/20)*(1+self.water_velocity)
                 self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=(0.1*self.temp)*dt
                 condensation=(0.02*self.pressure*self.void)*dt
