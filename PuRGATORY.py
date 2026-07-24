@@ -978,6 +978,7 @@ class GridCell:
             self.void_temp=self.temp
             self.boiling_point=320
             self.pressure=15
+            self.density=safe_div(self.mass,self.level)
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -996,6 +997,8 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
+                self.level=self.mass*(self.temp**0.016)
+                self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-0.5,0.5)
                 self.viscosity=10/self.temp
                 D=0.01
@@ -1006,11 +1009,13 @@ class GridCell:
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
                 self.water_direction=self.water_direction+(self.water_direction-self.last_water_direction+oscillation)*(self.turbulence_intensity*15)
                 self.last_water_direction=self.water_direction
+                g=9.81
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
+                    n.pressure=self.pressure+((0.5*(self.density*1000))*(self.water_velocity**2-n.water_velocity**2))+((self.density*1000)*g)*((self.level/1000)-(n.level/1000))
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
