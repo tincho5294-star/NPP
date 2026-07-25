@@ -22,12 +22,14 @@ from collections import deque
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
+sector_font=pygame.font.SysFont("arial",20)
 meter_font=pygame.font.SysFont("arial",10)
 style_font=pygame.font.SysFont("lucidaconsole",30)
 dial_clicking_sound=pygame.mixer.Sound('dial_clicking_sound.mp3')
 dial_drag_cancel_sound=pygame.mixer.Sound('dial_drag_cancel.mp3')
 type_1_and_2_button_sound=pygame.mixer.Sound('type_1_and_2_button.mp3')
 type_3_and_4_button_sound=pygame.mixer.Sound('type_4_and_3_button.mp3')
+CVCS_text=sector_font.render("CVCS",True,(255,255,255))
 dt=1.0/60.0
 def draw_text(text, font, color, surface, x, y):
     text_obj = font.render(text, True, color)
@@ -1364,6 +1366,9 @@ while running:
             for cell in row:
                 if cell.Area in selected_area_set:
                     cell.CR_depth = cr_value
+    pygame.draw.rect(screen,(100,100,100),(370,350,100,225))
+    pygame.draw.rect(screen,(50,50,50),(375,550,90,20))
+    screen.blit(CVCS_text,(397,547.5))
     amount=len(juggle_history)
     if amount<2:
         p=c=None
