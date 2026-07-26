@@ -64,6 +64,31 @@ def safe_div(a,b):
         return s
 def lerp(a, b, t):
     return a + (b - a) * t
+class LightSource:
+    def __init__(self,x,y,DistanceFromGround,brightness,range):
+        self.x=x
+        self.y=y
+        self.DistanceFromGround=DistanceFromGround
+        self.brightness=brightness
+        self.range=range
+        self.layer=[{"Surface":None,"radius":self.range},
+                    {"Surface":None,"radius":self.range*0.9},
+                    {"Surface":None,"radius":(self.range*0.9)*0.9},
+                    {"Surface":None,"radius":((self.range*0.9)*0.9)},
+                    {"Surface":None,"radius":(((self.range*0.9)*0.9))*0.9}, #pure masterpiece i swear
+                    {"Surface":None,"radius":((((self.range*0.9)*0.9))*0.9)*0.9},
+                    {"Surface":None,"radius":(((((self.range*0.9)*0.9))*0.9)*0.9)*0.9},
+                    {"Surface":None,"radius":((((((self.range*0.9)*0.9))*0.9)*0.9)*0.9)*0.9}, 
+                    {"Surface":None,"radius":(((((((self.range*0.9)*0.9))*0.9)*0.9)*0.9)*0.9)*0.9}]
+        self.lightsurface=pygame.Surface((self.range*2,self.range*2),pygame.SRCALPHA)
+    def LightUp(self):
+        for l in self.layer:
+            l_R=clamp((255*(1-(l["radius"]/self.range))*self.brightness)*2,0,255)
+            l_G=clamp((255*(1-(l["radius"]/self.range))*self.brightness)*2,0,255)
+            l_B=clamp((255*(1-(l["radius"]/self.range))*self.brightness)*2,0,255)
+            l_A=20
+            pygame.draw.circle(self.lightsurface,(l_R,l_G,l_B,l_A),(self.range,self.range),l["radius"])
+            screen.blit(self.lightsurface, (self.x-self.range,self.y-self.range))
 class Marker:
     def __init__(self,x,y,owner=None,toggle=False,_type=None):
         self.x=x
@@ -1401,8 +1426,6 @@ while running:
     void_meter.update()
     if current_control_panel==1:
         boiling_point_meter.draw(screen)
-        water_level_meter.draw(screen)
-        void_meter.draw(screen)
     pygame.display.flip()
     clock.tick(60)
 pygame.quit()
