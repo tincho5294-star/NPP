@@ -243,10 +243,10 @@ class StyleManager:
         self.style = [
             {"name": "CRITICAL", "score": 200},
             {"name": "SUPERCRITICAL", "score": 400},
-            {"name": "CRAM", "score": 25},
+            {"name": "CRAM", "score": 900},
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
-            {"name": "JUGGLE", "score": 25},
+            {"name": "JUGGLE", "score": 900},
             {"name": "ONSET","score": 200},
             {"name": "RECKLESS","score":5}
         ]
@@ -255,7 +255,6 @@ class StyleManager:
         self.current_rank=None
         self.style_multiplier = 1
         self.rank_dur = 100
-        self.rank_decay_rate = 0.999
         self.visual_t = 0
         self.max_display = 7
     def add_style_log(self, style_entry, timer=5):
@@ -278,8 +277,8 @@ class StyleManager:
         self.rank_dur=clamp(self.rank_dur,0,900)
         rank_number=self.rank_dur//100
         self.current_rank=self.style_rank[int(rank_number-1)]
-        self.style_multiplier = clamp(self.style_multiplier * self.rank_decay_rate,1,5)
-        self.rank_dur*=self.rank_decay_rate
+        self.style_multiplier = clamp(self.style_multiplier - 0.1*dt,1,5)
+        self.rank_dur=clamp(self.rank_dur-(10*dt),0,900)
     def draw(self, screen, x, y):
         target_t = clamp((self.style_multiplier - 1.0) / 4.0, 0, 1)
         self.visual_t = lerp(self.visual_t, target_t, 0.05)
@@ -564,7 +563,16 @@ class PlayerManager:
         self.hard=self.max_health-self.health
         target_health=self.max_health*((style-min_style)/(max_style-min_style))
         self.next_health=lerp(self.health,target_health,dt)
-        self.health=lerp(self.health,self.next_health,0.001/(1+(self.hard/100)) if (self.next_health>((self.max_health-self.min_health)-self.hard)) else 1)
+        self.health=lerp(self.health,self.next_health,0.01/(1+(self.hard/100)) if (self.next_health>self.health) else dt)
+    def draw(self,screen,x,y):
+        w=20
+        h=100
+        ratio=(self.health-self.min_health)/(self.max_health-self.min_health)
+        HP_y=(y+h)-(h*ratio)
+        pygame.draw.rect(screen,(30,30,30),(x,y,w,h*(1-ratio)))
+        pygame.draw.rect(screen,(100,100,100),(x,y,w,h*ratio))
+        pygame.draw.rect(screen,(255,0,0),(x,HP_y,w,h*ratio))
+        
 class Meter:
     def __init__(self,x,y,w,h,value,min_value,max_value,timeline_length):
         self.x=x
@@ -943,7 +951,7 @@ class GridCell:
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))*2
+        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
@@ -1153,6 +1161,10 @@ class Reactor:
                 step=p*(dt*0.1)
                 prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20}
                 self.water_entry.append(prefilled_water)
+            for c in range(626):
+                CVCS_step=c*(dt*0.1)
+                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20}
+                self.CVCS_entry.append(CVCS_prefilled_water)
         def update(self):
             if self.entrance is not None:
                 self.coolant_flow_rate=pumps[0].force
@@ -1229,6 +1241,7 @@ class Turbine:
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
         self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.9)
+PM=PlayerManager()
 last_knob_name=None
 juggle_history=[]
 cell_temp_total=0
@@ -1424,6 +1437,8 @@ while running:
     water_level_meter.update()
     void_meter.value=reactor.void
     void_meter.update()
+    PM.update(sm.rank_dur,900,0)
+    PM.draw(screen,700,300)
     if current_control_panel==1:
         boiling_point_meter.draw(screen)
     pygame.display.flip()
