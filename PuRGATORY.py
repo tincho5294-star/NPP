@@ -310,7 +310,7 @@ class StyleManager:
 
         draw_text(f"x{self.style_multiplier:.2f}", style_font, m_color, screen, draw_x + 5, draw_y + h - 25)
 class Knob:
-    def __init__(self,x,y,name,panel_number,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False): 
+    def __init__(self,x,y,name,panel_number,light,distancefromground,vmin=0,vmax=100,amin_1=40,amax_1=140,amax_2=330,amin_2=210,amid=90,value=0,radius=40,hitpad=12,_type=None,toggle=False): 
         self.x=x
         self.y=y
         self.name=name
@@ -321,6 +321,7 @@ class Knob:
         self.amin_2=amin_2
         self.amax_2=amax_2
         self.amid=amid
+        self.light=light
         self.value=value
         self.radius=radius
         self.hitpad=hitpad
@@ -332,9 +333,12 @@ class Knob:
         self.sound_tolerance=0.4
         self.last_sound_tick=None
         self.freshness=1.5
+        self.DistanceFromGround=distancefromground
         self.last_released_value=self.value
         self.last_released_time=pygame.time.get_ticks()
         self.panel_number=panel_number
+        self.shadow_surface=pygame.Surface((800,600),pygame.SRCALPHA)
+        self.shadow_alpha=55
         if self._type == 1:
             self.on_marker = Marker(self.x + 28, self.y - 6, owner=self, _type="on")
             self.off_marker = Marker(self.x - 40, self.y - 6, owner=self, _type="off")
@@ -498,6 +502,27 @@ class Knob:
                 second_point=(self.x+math.cos((ang+math.pi)+1.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+1.5*math.pi)*(self.radius*0.1))
                 third_point=(self.x+math.cos((ang+math.pi)-math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)-math.pi/27)*self.radius)
                 fourth_point=(self.x+math.cos((ang+math.pi)+math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)+math.pi/27)*self.radius)
+                shadow_points=[
+                    {"x":None,"y":None,"point":first_point},
+                    {"x":None,"y":None,"point":second_point},
+                    {"x":None,"y":None,"point":third_point},
+                    {"x":None,"y":None,"point":fourth_point}
+                ]
+                for s in shadow_points:
+                    owner_point=s["point"]
+                    dx=self.light.x-owner_point[0]
+                    dy=owner_point[1]-self.light.y
+                    dir_ground=self.DistanceFromGround-self.light.DistanceFromGround
+                    dist_ground=abs(self.DistanceFromGround-self.light.DistanceFromGround)
+                    s["x"]=owner_point[0]+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/10,math.atan2(dir_ground,math.hypot(dx,dy)))
+                    s["y"]=owner_point[1]-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/10,math.atan2(dir_ground,math.hypot(dx,dy)))
+                shadow_first=shadow_points[0]
+                shadow_second=shadow_points[1]
+                shadow_third=shadow_points[2]
+                shadow_fourth=shadow_points[3]
+                self.shadow_surface.fill((0,0,0,0))
+                pygame.draw.polygon(self.shadow_surface,(0,0,0,self.shadow_alpha),[(shadow_first["x"],shadow_first["y"]),(shadow_second["x"],shadow_second["y"]),(shadow_third["x"],shadow_third["y"]),(shadow_fourth["x"],shadow_fourth["y"])])
+                screen.blit(self.shadow_surface,(0,0))
                 pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
                 pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
                 pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
@@ -1241,6 +1266,7 @@ class Turbine:
         self.generation=(self.RPM*self.force)
         self.total_generation+=self.generation*dt
         self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.9)
+light_1=LightSource(400,300,300,0.5,500)
 PM=PlayerManager()
 last_knob_name=None
 juggle_history=[]
@@ -1303,20 +1329,17 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont(None, 24)
 sm=StyleManager()
 knobs=[
-    Knob(300,400, "Heater",1,value=0, radius=40, _type=2),
-    Knob(300,500, "Fine Control Heater",1, value=0, radius=40, _type=2),
-    Knob(180,400, "Sprinkler",1, value=0,radius=40, _type=2),
-    Knob(180,500, "Fine Control Sprinkler",1, value=0, radius=40, _type=2),
-    Knob(420, 300, "Coolant Flow Rate",1, value=0, radius=40, _type=2),
-    Knob(420, 400, "Boration",1, value=0, radius=40, _type=2),
-    Knob(420, 500,"Demin. control",1, value=0, radius=40, _type=2),
-    Knob(300, 300, "switch",1, vmin=0, vmax=100, value=0, radius=40, _type=1),
-    Knob(60,400,"Makeup Valve",1,value=0,radius=40,_type=2),
-    Knob(60,500,"Letdown Valve",1,value=0,radius=40,_type=2)
+    Knob(300,400, "Heater",1,light_1,160,value=0, radius=40, _type=2),
+    Knob(300,500, "Fine Control Heater",1,light_1,150, value=0, radius=40, _type=2),
+    Knob(180,400, "Sprinkler",1,light_1,160, value=0,radius=40, _type=2),
+    Knob(180,500, "Fine Control Sprinkler",1,light_1,150, value=0, radius=40, _type=2),
+    Knob(420, 300, "Coolant Flow Rate",1,light_1,170, value=0, radius=40, _type=2),
+    Knob(420, 400, "Boration",1,light_1,160, value=0, radius=40, _type=2),
+    Knob(420, 500,"Demin. control",1,light_1,150, value=0, radius=40, _type=2),
+    Knob(300, 300, "switch",1,light_1,170, vmin=0, vmax=100, value=0, radius=40, _type=1),
+    Knob(60,400,"Makeup Valve",1,light_1,160,value=0,radius=40,_type=2),
+    Knob(60,500,"Letdown Valve",1,light_1,150,value=0,radius=40,_type=2)
     ]
-knobs_2=[
-    Knob(300,400,"Steam Valve",2,_type=2)
-]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
     Button(490, 490, "A", 3, toggle=False, ready=True),
