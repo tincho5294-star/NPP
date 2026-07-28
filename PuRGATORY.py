@@ -406,6 +406,13 @@ class Knob:
 
     def draw(self,screen):
         if self.panel_number==current_control_panel:
+            dx=self.light.x-(self.x - 45)
+            dy=(self.y-45)-self.light.y
+            dir_ground=self.DistanceFromGround-self.light.DistanceFromGround
+            dist_ground=abs(self.DistanceFromGround-self.light.DistanceFromGround)
+            shadow_rect_coordinates=((self.x - 45)+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy))),(self.y - 45)-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy))))
+            pygame.draw.rect(self.shadow_surface,(0,0,0,self.shadow_alpha),(shadow_rect_coordinates[0],shadow_rect_coordinates[1],90,90))
+            screen.blit(self.shadow_surface,(0,0))
             pygame.draw.rect(screen, (30, 30, 30), (self.x - 45, self.y - 45, 90, 90))
             global dial_font
             name_surf = dial_font.render(self.name, True, (200, 200, 200))
