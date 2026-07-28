@@ -338,7 +338,7 @@ class Knob:
         self.last_released_time=pygame.time.get_ticks()
         self.panel_number=panel_number
         self.shadow_surface=pygame.Surface((800,600),pygame.SRCALPHA)
-        self.shadow_alpha=55
+        self.shadow_alpha=150
         if self._type == 1:
             self.on_marker = Marker(self.x + 28, self.y - 6, owner=self, _type="on")
             self.off_marker = Marker(self.x - 40, self.y - 6, owner=self, _type="off")
@@ -514,13 +514,16 @@ class Knob:
                     dy=owner_point[1]-self.light.y
                     dir_ground=self.DistanceFromGround-self.light.DistanceFromGround
                     dist_ground=abs(self.DistanceFromGround-self.light.DistanceFromGround)
-                    s["x"]=owner_point[0]+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/10,math.atan2(dir_ground,math.hypot(dx,dy)))
-                    s["y"]=owner_point[1]-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/10,math.atan2(dir_ground,math.hypot(dx,dy)))
+                    s["x"]=owner_point[0]+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                    s["y"]=owner_point[1]-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                shadow_circle_x=self.x+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                shadow_circle_y=self.y-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
                 shadow_first=shadow_points[0]
                 shadow_second=shadow_points[1]
                 shadow_third=shadow_points[2]
                 shadow_fourth=shadow_points[3]
                 self.shadow_surface.fill((0,0,0,0))
+                pygame.draw.circle(self.shadow_surface,(0,0,0,self.shadow_alpha),(shadow_circle_x,shadow_circle_y),9)
                 pygame.draw.polygon(self.shadow_surface,(0,0,0,self.shadow_alpha),[(shadow_first["x"],shadow_first["y"]),(shadow_second["x"],shadow_second["y"]),(shadow_third["x"],shadow_third["y"]),(shadow_fourth["x"],shadow_fourth["y"])])
                 screen.blit(self.shadow_surface,(0,0))
                 pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
