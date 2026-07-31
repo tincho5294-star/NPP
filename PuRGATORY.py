@@ -1223,16 +1223,23 @@ class Reactor:
                     previous=self.water_entry[i-1] if i>0 else None
                     current=self.water_entry[i]
                     later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
-                    if previous is not None and current is not None:
+                    if previous is not None:
                         previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
                         previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"]),0)),dt)
-                    if later is not None and current is not None:
+                    if later is not None:
                         current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
                         current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
                 for shit in self.CVCS_entry:
                     flow_rate=pumps[1].force
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
-                    
+                    shit["progress"]+=(1/15)*shit["velocity"]*dt
+                    for i_shit in range(len(self.CVCS_entry)):
+                        shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
+                        shit_current=self.CVCS_entry[i_shit]
+                        shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
+                        if shit_previous is not None:
+                            #shit_yourself() 
+                            shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],max(safe_div(1,dt)*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.force=0
