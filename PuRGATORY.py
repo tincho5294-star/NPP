@@ -1194,11 +1194,11 @@ class Reactor:
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
-                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20}
+                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0}
                 self.water_entry.append(prefilled_water)
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
-                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20}
+                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0}
                 self.CVCS_entry.append(CVCS_prefilled_water)
         def update(self):
             if self.entrance is not None:
@@ -1224,13 +1224,14 @@ class Reactor:
                     current=self.water_entry[i]
                     later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                     if previous is not None and current is not None:
-                        if abs(previous["progress"]-current["progress"])<=dt:
-                            previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),dt)
-                            previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),dt)
+                        previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                        previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"]),0)),dt)
                     if later is not None and current is not None:
-                        if abs(later["progress"]-current["progress"])<=dt:
-                            current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),dt)
-                            current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),dt)
+                        current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
+                        current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
+                for shit in self.CVCS_entry:
+                    flow_rate=pumps[1].force
+                    shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
                     
 class Pump:
     def __init__(self,name,parent_knob):
@@ -1277,6 +1278,7 @@ class Turbine:
         self.total_generation+=self.generation*dt
         self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.9)
 light_1=LightSource(400,300,300,0.5,500)
+light_2=LightSource(400,300,300,0.5,500)
 PM=PlayerManager()
 last_knob_name=None
 juggle_history=[]
@@ -1350,6 +1352,9 @@ knobs=[
     Knob(60,400,"Makeup Valve",1,light_1,160,value=0,radius=40,_type=2),
     Knob(60,500,"Letdown Valve",1,light_1,150,value=0,radius=40,_type=2)
     ]
+knobs_2=[
+    Knob(420, 300, "Charging Pump",1,light_2,170, value=0, radius=40, _type=2)
+]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
     Button(490, 490, "A", 3, toggle=False, ready=True),
@@ -1364,7 +1369,8 @@ buttons = [
     Button(700, 530, "test", 2, toggle=False, ready=True)
 ]
 pumps=[
-    Pump("RCP",knobs[4])
+    Pump("RCP",knobs[4]),
+    Pump("CP",None)
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
