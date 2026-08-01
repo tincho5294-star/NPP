@@ -1231,8 +1231,11 @@ class Reactor:
                         current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
                 for shit in self.CVCS_entry:
                     flow_rate=pumps[1].force
+                    boration=knobs[5].value*5
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
                     shit["progress"]+=(1/15)*shit["velocity"]*dt
+                    if 6.984<=shit["progress"]<=7.016:
+                        shit["boron"]+=boration*dt
                     for i_shit in range(len(self.CVCS_entry)):
                         shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
                         shit_current=self.CVCS_entry[i_shit]
@@ -1240,6 +1243,7 @@ class Reactor:
                         if shit_previous is not None:
                             #shit_yourself() 
                             shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],max(safe_div(1,dt)*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])),0),dt)
+                            shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current,max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"]),0)),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.force=0
