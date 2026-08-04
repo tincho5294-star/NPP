@@ -521,10 +521,10 @@ class Knob:
                     dy=owner_point[1]-self.light.y
                     dir_ground=self.DistanceFromGround-self.light.DistanceFromGround
                     dist_ground=abs(self.DistanceFromGround-self.light.DistanceFromGround)
-                    s["x"]=owner_point[0]+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
-                    s["y"]=owner_point[1]-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
-                shadow_circle_x=self.x+math.cos(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
-                shadow_circle_y=self.y-math.sin(math.atan2(dy,dx))*safe_div(dist_ground/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                    s["x"]=owner_point[0]+math.cos(math.atan2(dy,dx))*safe_div(self.DistanceFromGround/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                    s["y"]=owner_point[1]-math.sin(math.atan2(dy,dx))*safe_div(self.DistanceFromGround/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                shadow_circle_x=self.x+math.cos(math.atan2(dy,dx))*safe_div(self.DistanceFromGround/25,math.atan2(dir_ground,math.hypot(dx,dy)))
+                shadow_circle_y=self.y-math.sin(math.atan2(dy,dx))*safe_div(self.DistanceFromGround/25,math.atan2(dir_ground,math.hypot(dx,dy)))
                 shadow_first=shadow_points[0]
                 shadow_second=shadow_points[1]
                 shadow_third=shadow_points[2]
