@@ -1187,6 +1187,7 @@ class Reactor:
             self.inlet_valve=1
             self.outlet_valve=1
             self.coolant_flow_rate=0
+            self.demin_dur=120000
             self.makeup_tank_mass=120000
             self.circ_mass=7000
             self.circ_pressure=1
@@ -1234,8 +1235,9 @@ class Reactor:
                     boration=knobs[5].value*5
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
                     shit["progress"]+=(1/15)*shit["velocity"]*dt
-                    if 6.984<=shit["progress"]<=7.016:
-                        shit["boron"]+=boration*dt
+                    if 4.984<=shit["progress"]<=5.016:
+                        shit["boron"]=int(max(shit["boron"]-300*dt*(knobs[7].value/100),0))
+                        self.demin_dur=int(max(self.demin_dur-300*dt*(knobs[7].value/100),0))
                     for i_shit in range(len(self.CVCS_entry)):
                         shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
                         shit_current=self.CVCS_entry[i_shit]
