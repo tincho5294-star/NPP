@@ -1237,8 +1237,8 @@ class Reactor:
                     shit["progress"]+=(1/15)*shit["velocity"]*dt
                     if 4.984<=shit["progress"]<=5.016:
                         if self.demin_dur>=0:
-                            shit["boron"]=int(max(shit["boron"]-3*(knobs[7].value/100),0))
-                            self.demin_dur=int(max(self.demin_dur-3*(knobs[7].value/100),0))
+                            shit["boron"]=max(shit["boron"]-3*(knobs[7].value/100),0)
+                            self.demin_dur=max(self.demin_dur-3*(knobs[7].value/100),0)
                     if 6.984<=shit["progress"]<=7.016:
                         shit["boron"]=int(max(shit["boron"]+))
                     for i_shit in range(len(self.CVCS_entry)):
