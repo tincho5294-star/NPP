@@ -1236,8 +1236,11 @@ class Reactor:
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
                     shit["progress"]+=(1/15)*shit["velocity"]*dt
                     if 4.984<=shit["progress"]<=5.016:
-                        shit["boron"]=int(max(shit["boron"]-300*dt*(knobs[7].value/100),0))
-                        self.demin_dur=int(max(self.demin_dur-300*dt*(knobs[7].value/100),0))
+                        if self.demin_dur>=0:
+                            shit["boron"]=int(max(shit["boron"]-3*(knobs[7].value/100),0))
+                            self.demin_dur=int(max(self.demin_dur-3*(knobs[7].value/100),0))
+                    if 6.984<=shit["progress"]<=7.016:
+                        shit["boron"]=int(max(shit["boron"]+))
                     for i_shit in range(len(self.CVCS_entry)):
                         shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
                         shit_current=self.CVCS_entry[i_shit]
