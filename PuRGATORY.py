@@ -1109,7 +1109,7 @@ class GridCell:
                 B=0
                 color=(R,G,B)
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
-                pygame.draw.line(screen,color,(center_x,center_y),(min(self.offset_x,),self.offset_y))
+                pygame.draw.line(screen,color,(center_x,center_y),(min(self.offset_x,center_x+math.cos(math.radians(normalize360(self.water_direction)))*7.5),min(self.offset_y)))
 class Reactor:
     def __init__(self,name):
         self.name=name
