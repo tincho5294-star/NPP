@@ -1048,6 +1048,8 @@ class GridCell:
             self.void_temp=self.temp
             self.boiling_point=320
             self.pressure=15
+            self.boron=0
+            self.boron_conc=0
             self.density=safe_div(self.mass,self.level)
         def get_neighbor(self):
             if self.area is None:
@@ -1082,9 +1084,10 @@ class GridCell:
                 g=9.81
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
-                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
-                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,max(1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,0),dt)
+                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
+                    self.boron,n.boron=heat_exchange(self.boron,n.boron,)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
@@ -1097,8 +1100,8 @@ class GridCell:
                 self.mass-=evaporation-condensation
         def draw(self,screen):
             if self.owner.Area is not None:
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(7.5*self.water_velocity,0,7.5)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
@@ -1106,7 +1109,7 @@ class GridCell:
                 B=0
                 color=(R,G,B)
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
-                pygame.draw.line(screen,color,(center_x,center_y),(self.offset_x,self.offset_y))
+                pygame.draw.line(screen,color,(center_x,center_y),(min(self.offset_x,),self.offset_y))
 class Reactor:
     def __init__(self,name):
         self.name=name
