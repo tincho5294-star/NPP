@@ -1102,6 +1102,8 @@ class GridCell:
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
                 self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
@@ -1109,7 +1111,7 @@ class GridCell:
                 B=0
                 color=(R,G,B)
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
-                pygame.draw.line(screen,color,(center_x,center_y),(min(self.offset_x,center_x+math.cos(math.radians(normalize360(self.water_direction)))*7.5),min(self.offset_y,center_y-math.sin(math.radians(normalize360(self.water_direction)))*7.5)))
+                pygame.draw.line(screen,color,(center_x,center_y),(drawing_offset_x,drawing_offset_y))
 class Reactor:
     def __init__(self,name):
         self.name=name
@@ -1244,14 +1246,14 @@ class Reactor:
                             self.demin_dur=max(self.demin_dur-3*pumps[1].force,0)
                     if 6.984<=shit["progress"]<=7.016:
                         shit["boron"]=shit["boron"]+(3*pumps[1].force)
-                    for i_shit in range(len(self.CVCS_entry)):
-                        shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
-                        shit_current=self.CVCS_entry[i_shit]
-                        shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
-                        if shit_previous is not None:
-                            #shit_yourself() 
-                            shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],max(safe_div(1,dt)*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])),0),dt)
-                            shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
+                for i_shit in range(len(self.CVCS_entry)):
+                    shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
+                    shit_current=self.CVCS_entry[i_shit]
+                    shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
+                    if shit_previous is not None:
+                        #shit_yourself() 
+                        shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],max(safe_div(1,dt)*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])),0),dt)
+                        shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.force=0
