@@ -1084,10 +1084,10 @@ class GridCell:
                 g=9.81
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
-                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,1-math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
-                    self.boron,n.boron=heat_exchange(self.boron,n.boron,)
+                    self.boron,n.boron=heat_exchange(self.boron,n.boron,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
@@ -1229,10 +1229,10 @@ class Reactor:
                     later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                     if previous is not None:
                         previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                        previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"]),0)),dt)
+                        previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
                     if later is not None:
                         current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
-                        current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
+                        current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max((safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"]))),0),dt)
                 for shit in self.CVCS_entry:
                     flow_rate=pumps[1].force
                     boration=knobs[5].value*5
@@ -1243,7 +1243,7 @@ class Reactor:
                             shit["boron"]=max(self.demin_dur-3*pumps[1].force,0)
                             self.demin_dur=max(self.demin_dur-3*pumps[1].force,0)
                     if 6.984<=shit["progress"]<=7.016:
-                        shit["boron"]=max(shit["boron"]+(3*pumps[1].force))
+                        shit["boron"]=shit["boron"]+(3*pumps[1].force)
                     for i_shit in range(len(self.CVCS_entry)):
                         shit_previous=self.CVCS_entry[i_shit-1] if i>0 else None
                         shit_current=self.CVCS_entry[i_shit]
@@ -1251,7 +1251,7 @@ class Reactor:
                         if shit_previous is not None:
                             #shit_yourself() 
                             shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],max(safe_div(1,dt)*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])),0),dt)
-                            shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current,max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"]),0)),dt)
+                            shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.force=0
@@ -1389,7 +1389,7 @@ buttons = [
 ]
 pumps=[
     Pump("RCP",knobs[4]),
-    Pump("CP",None)
+    Pump("CP",knobs_2[0])
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
