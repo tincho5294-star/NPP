@@ -1200,24 +1200,29 @@ class Reactor:
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
-                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0}
+                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1}
                 self.water_entry.append(prefilled_water)
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
-                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0}
+                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1}
                 self.CVCS_entry.append(CVCS_prefilled_water)
         def update(self):
             if self.entrance is not None:
                 self.coolant_flow_rate=pumps[0].force
                 receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
-                self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp})
+                self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure})
                 for p in self.water_entry:
                     p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
                     p["progress"]+=(1/15)*p["velocity"]*dt
                     if p["progress"]>=1:
-                        self.exit.w_cell.mass+=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
-                        p["amount"]-=(p["amount"]*self.outlet_valve*p["velocity"]) if p["amount"]>=(p["amount"]*self.outlet_valve*p["velocity"]) else p["amount"]
+                        if p["amount"]<=(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure)):
+                            if (p["pressure"]-self.exit.w_cell.pressure)>0:
+                                p["amount"]=0
+                                self.exit.w_cell.mass+=p["amount"]
+                        else:
+                            p["amount"]=p["amount"]-(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure))
+                            self.exit.w_cell.mass+=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure))
                         p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
                         p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
                     if (0.6-dt)<=p["progress"]<=(0.6+dt):
@@ -1237,7 +1242,6 @@ class Reactor:
                         current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max((safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"]))),0),dt)
                 for shit in self.CVCS_entry:
                     flow_rate=pumps[1].force
-                    boration=knobs[5].value*5
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
                     shit["progress"]+=(1/15)*shit["velocity"]*dt
                     if 4.984<=shit["progress"]<=5.016:
