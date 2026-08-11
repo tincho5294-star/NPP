@@ -990,9 +990,9 @@ class GridCell:
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.core.boron_conc*0.5))
+        k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
-        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt*2)
+        self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt)
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
@@ -1098,6 +1098,7 @@ class GridCell:
                 condensation=(0.02*self.pressure*self.void)*dt
                 self.void+=evaporation-condensation
                 self.mass-=evaporation-condensation
+                self.boron_conc=safe_div(self.boron,self.mass)
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
@@ -1211,7 +1212,7 @@ class Reactor:
                 self.coolant_flow_rate=pumps[0].force
                 receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
                 self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
-                self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure})
+                self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
                 for p in self.water_entry:
                     p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
                     p["progress"]+=(1/15)*p["velocity"]*dt
