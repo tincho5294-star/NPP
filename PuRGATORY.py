@@ -1200,11 +1200,11 @@ class Reactor:
             self.water_entry=[]
             for p in range(626):
                 step=p*(dt*0.1)
-                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1}
+                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
                 self.water_entry.append(prefilled_water)
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
-                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1}
+                CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
                 self.CVCS_entry.append(CVCS_prefilled_water)
         def update(self):
             if self.entrance is not None:
@@ -1215,11 +1215,16 @@ class Reactor:
                 for p in self.water_entry:
                     p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
                     p["progress"]+=(1/15)*p["velocity"]*dt
+                    p["pressure"]=(1+p["velocity"])*((p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
                     if p["progress"]>=1:
                         if p["amount"]<=(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure)):
                             if (p["pressure"]-self.exit.w_cell.pressure)>0:
-                                p["amount"]=0
                                 self.exit.w_cell.mass+=p["amount"]
+                                p["amount"]=0
+                        if self.exit.w_cell.mass<=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure)):
+                            if (p["pressure"]-self.exit.w_cell.pressure)<0:
+                                p["amount"]+=self.exit.w_cell.mass
+                                self.exit.w_cell.mass=0
                         else:
                             p["amount"]=p["amount"]-(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure))
                             self.exit.w_cell.mass+=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure))
