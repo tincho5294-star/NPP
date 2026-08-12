@@ -1051,6 +1051,7 @@ class GridCell:
             self.boron=0
             self.boron_conc=0
             self.density=safe_div(self.mass,self.level)
+            self.history=[self.water_direction]
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1069,6 +1070,7 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
+                self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.level=self.mass*(self.temp**0.016)
                 self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-0.5,0.5)
@@ -1079,9 +1081,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.water_direction=self.water_direction+(self.water_direction-self.last_water_direction+oscillation)*(self.turbulence_intensity*15)
-                self.last_water_direction=self.water_direction
-                g=9.81
+                self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
@@ -1099,10 +1099,12 @@ class GridCell:
                 self.void+=evaporation-condensation
                 self.mass-=evaporation-condensation
                 self.boron_conc=safe_div(self.boron,self.mass)
+                self.history.append(self.water_direction)
+                self.history=self.history[-2:]
         def draw(self,screen):
             if self.owner.Area is not None:
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*7.5*self.water_velocity
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(7.5*self.water_velocity)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(7.5*self.water_velocity)
                 drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
                 drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
                 center_x=self.x+7.5
