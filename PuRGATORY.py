@@ -927,8 +927,7 @@ class Computer:
             screen.blit(label,(x,y+h-18))
             screen.set_clip(old_clip)
 class GridCell:
-    def __init__(self,x,y,ix,iy,area,core):
-        self.core=core
+    def __init__(self,x,y,ix,iy,area):
         self.x=x
         self.y=y
         self.next_temp=20
@@ -947,7 +946,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=0.2
-        self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,core,area)
+        self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
         G=clamp(safe_div((255*((2000-(self.temp*5))/500)),(self.w_cell.pressure/20)),0,255)
@@ -982,7 +981,7 @@ class GridCell:
             return
         for n in self.neighbors:
             self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,dt)
-        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.core.water_level/7000)*0.1))*(1.85-self.core.water_density)),dt)
+        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
@@ -996,7 +995,7 @@ class GridCell:
         if not math.isfinite(self.next_neutrons):
             self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
-        self.next_temp=self.temp+((reaction/(1+(self.core.water_mass/7000)*0.05))*dt)
+        self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,0.005,dt)
         if not math.isfinite(self.next_temp):
@@ -1008,8 +1007,6 @@ class GridCell:
         if not math.isfinite(self.uranium_mass):
             self.uranium_mass=0
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        if not math.isfinite(self.core.water_temp):
-            self.core.water_temp=20
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         self.next_temp=max(20,self.next_temp)
@@ -1021,7 +1018,7 @@ class GridCell:
         self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
     class WaterCell: #the class of PURE AGONY.
-        def __init__(self,x,y,gridcell,ix,iy,reactor,area):
+        def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
             self.temp=20
             self.neighbors=[]
@@ -1029,7 +1026,6 @@ class GridCell:
             self.y=y
             self.ix=ix
             self.iy=iy
-            self.core=reactor
             self.owner=gridcell
             self.area=area
             self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
@@ -1086,13 +1082,13 @@ class GridCell:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+((self.owner.core.coolant_flow_rate/100)*0.5),dt)
+                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((self.core.pressurizer_temp*(((self.mass+(self.void*1600))*self.temp)/700000))/20)*(1+self.water_velocity)
+                self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
                 self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=(0.1*self.temp)*dt
                 condensation=(0.02*self.pressure*self.void)*dt
@@ -1115,139 +1111,78 @@ class GridCell:
                 color=(R,G,B)
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
                 pygame.draw.line(screen,color,(center_x,center_y),(drawing_offset_x,drawing_offset_y))
-class Reactor:
-    def __init__(self,name):
-        self.name=name
-        self.void=0
-        self.boron=0
-        self.void=0
-        self.void_temp=20
-        self.precipitated_boron=0
-        self.pressurizer_temp=20
-        self.water_temp=20
-        self.avg_temp=20
-        self.avg_xenon=0
-        self.void_coeff=0
-        self.boron_conc=0
+class Tank:
+    def __init__(self,size):
+        self.size=size
+        self.amount=size
+        self.temp=20
+        self.pressure=(self.amount/self.size)*(self.temp/20)
+
+class CircSystems:    # ah shi here we go again
+    def __init__(self,entrance_cell,exit_cell,SG,number):
+        self.entrance=entrance_cell
+        self.exit=exit_cell
+        self.inlet_valve=1
+        self.outlet_valve=1
         self.coolant_flow_rate=0
-        self.sprinkler=0
-        self.heater=0
-        self.fine_heater=0
-        self.fine_sprinkler=0
-        self.coolant_temp=20
-        self.pressure=15
-        self.max_pressure=20
-        self.boiling_point=300
-        self.boiling=False
-        self.water_level=7000
-        self.water_mass=7000
-        self.water_density=0
-        self.circ_water_mass=0
-        self.void_temp=20
-        self.CircSys=Reactor.CircSystems(None,None)
-    def update(self):
-        self.heater=knobs[0].value
-        self.sprinkler=knobs[2].value
-        self.fine_heater=knobs[1].value
-        self.fine_sprinkler=knobs[3].value
-        self.coolant_flow_rate=knobs[4].value
-        circ_flow=((knobs[9].value/100)*(knobs[8].value/100))
-        if self.circ_water_mass>0:
-            self.water_mass+=450*(knobs[8].value/100)*dt
-        if self.circ_water_mass<1000:
-            self.water_mass-=450*(knobs[9].value/100)*dt
-        if not math.isfinite(self.water_mass):
-            self.water_mass=7000
-        self.water_mass=clamp(self.water_mass,0,7000)
-        self.circ_water_mass+=(450*(knobs[9].value/100))*dt
-        self.circ_water_mass-=(450*(knobs[8].value/100))*dt
-        self.circ_water_mass=clamp(self.circ_water_mass,0,1000)
-
-        self.water_level=(self.water_mass+(self.water_temp/20))
-        self.water_level=clamp(self.water_level,0,7000)
-
-        max_saturation = (0.00001 * (self.water_temp ** 2) + 0.00033 * self.water_temp + 0.01) * (self.water_mass/7000)
-        max_saturation=clamp(max_saturation,0,1)
-
-        self.boron+=450*((circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(1-self.boron_conc))-(max(0,(self.boron-(7000*max_saturation)))))*dt
-        self.precipitated_boron+=max((450*(circ_flow*((knobs[5].value/100)-(knobs[6].value/100))*(self.boron_conc))+(((self.boron)-(7000*max_saturation)))*dt),0)
-        self.boron=clamp(self.boron,0,7000)
-
-        self.boron_conc=self.boron/self.water_mass
-        if not math.isfinite(self.boron_conc):
-            self.boron_conc=0
-        self.boron_conc=max(0,self.boron_conc)
-
-        self.water_density=safe_div(self.water_mass,self.water_level)
-        self.water_density=clamp(self.water_density,0,1)
-
-
-        self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp+20*((self.heater/100)+0.5*(self.fine_heater/100)),dt)
-        self.pressurizer_temp=lerp(self.pressurizer_temp,20,((self.sprinkler/100)+0.5*(self.fine_sprinkler/100))*dt)
-        self.pressure=(self.pressurizer_temp*(((self.water_mass+(self.void*1600))*self.water_temp)/700000))/20
-        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
-        self.boiling=self.avg_temp>self.boiling_point
-        self.water_mass=7000-self.void
-    class CircSystems:    # ah shi here we go again
-        def __init__(self,entrance_cell,exit_cell):
-            self.entrance=entrance_cell
-            self.exit=exit_cell
-            self.inlet_valve=1
-            self.outlet_valve=1
-            self.coolant_flow_rate=0
-            self.demin_dur=120000
-            self.makeup_tank_mass=120000
-            self.circ_mass=7000
-            self.circ_pressure=1
+        self.demin_dur=120000
+        self.number=number
+        self.SG=SG
+        if self.number==1:
             self.CVCS_entry=[]
-            self.water_entry=[]
-            for p in range(626):
-                step=p*(dt*0.1)
-                prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
-                self.water_entry.append(prefilled_water)
+        self.water_entry=[]
+        for p in range(626):
+            step=p*(dt*0.1)
+            prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
+            self.water_entry.append(prefilled_water)
+        if self.number==1:
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
                 CVCS_prefilled_water={"amount":3500*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
                 self.CVCS_entry.append(CVCS_prefilled_water)
-        def update(self):
-            if self.entrance is not None:
-                self.coolant_flow_rate=pumps[0].force
-                receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
-                self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
-                self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
-                for p in self.water_entry:
-                    p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
-                    p["progress"]+=(1/15)*p["velocity"]*dt
-                    p["pressure"]=(1+p["velocity"])*((p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
-                    if p["progress"]>=1:
-                        if p["amount"]<=(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure)):
-                            if (p["pressure"]-self.exit.w_cell.pressure)>0:
-                                self.exit.w_cell.mass+=p["amount"]
-                                p["amount"]=0
-                        if self.exit.w_cell.mass<=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure)):
-                            if (p["pressure"]-self.exit.w_cell.pressure)<0:
-                                p["amount"]+=self.exit.w_cell.mass
-                                self.exit.w_cell.mass=0
-                        else:
-                            p["amount"]=p["amount"]-(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure))
-                            self.exit.w_cell.mass+=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure))
-                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
-                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
-                    if (0.6-dt)<=p["progress"]<=(0.6+dt):
-                        p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
-                    p["progress"]=clamp(p["progress"],0,1)
-                    p["amount"]=max(0,p["amount"])
-                self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
-                for i in range(len(self.water_entry)):
-                    previous=self.water_entry[i-1] if i>0 else None
-                    current=self.water_entry[i]
-                    later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
-                    if previous is not None:
-                        previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                        previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
-                    if later is not None:
-                        current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
-                        current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max((safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"]))),0),dt)
+    def update(self):
+        if self.entrance is not None:
+            self.coolant_flow_rate=pumps[0].force
+            receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
+            self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
+            self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+            for p in self.water_entry:
+                p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
+                p["progress"]+=(1/15)*p["velocity"]*dt
+                p["pressure"]=(1+p["velocity"])*((p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
+                if p["progress"]>=1:
+                    if p["amount"]<=(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure)):
+                        if (p["pressure"]-self.exit.w_cell.pressure)>0:
+                            self.exit.w_cell.mass+=p["amount"]
+                            p["amount"]=0
+                    if self.exit.w_cell.mass<=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure)):
+                        if (p["pressure"]-self.exit.w_cell.pressure)<0:
+                            p["amount"]+=self.exit.w_cell.mass
+                            self.exit.w_cell.mass=0
+                    else:
+                        p["amount"]=p["amount"]-(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure))
+                        self.exit.w_cell.mass+=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure))
+                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
+                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
+                if (0.6-dt)<=p["progress"]<=(0.6+dt):
+                    p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
+                if 0.1<=p["progress"]<=0.4:
+                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,pumps[0].force,dt)
+                        
+                p["progress"]=clamp(p["progress"],0,1)
+                p["amount"]=max(0,p["amount"])
+            self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
+            for i in range(len(self.water_entry)):
+                previous=self.water_entry[i-1] if i>0 else None
+                current=self.water_entry[i]
+                later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
+                if previous is not None:
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(safe_div(1,dt)*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
+                if later is not None:
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max((safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"]))),0),dt)
+            if self.number==1:
                 for shit in self.CVCS_entry:
                     flow_rate=pumps[1].force
                     shit["velocity"]=lerp(shit["velocity"],flow_rate,dt)
@@ -1275,25 +1210,20 @@ class Pump:
         target_force=(self.parent_knob.value/100)
         self.force=lerp(self.force,target_force if self.toggle else 0,dt*2 if self.toggle else dt)
 class SteamGenerator:
-    def __init__(self,core,name):
+    def __init__(self,name,number):
         self.name=name
-        self.core=core
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
         self.water_mass=2000
         self.water_flow=1
         self.water_level=2000
+        self.number=number
         self.steam_valve=1
         self.steam=0
         self.boiling_point=0
-    def update(self):
-        self.pressure=(self.water_temp*(0.1+(self.steam/2000)*0.9))/20
-        self.boiling_point=100*math.log10(9+self.pressure**2.9)
-        self.core.water_temp,self.water_temp=heat_exchange(self.core.water_temp,self.water_temp,0.05*(self.water_flow*(self.water_mass/2000)),dt)
 class Turbine:
-    def __init__(self,SteamGenerator):
-        self.SteamGenerator=SteamGenerator
+    def __init__(self):
         self.steam=0
         self.pressure=0
         self.steam_temp=20
@@ -1301,15 +1231,6 @@ class Turbine:
         self.total_generation=0
         self.force=0
         self.generation=0
-    def update(self):
-        self.pressure=(self.steam_temp*(0.1+(self.steam/2000)*0.9))/20
-        self.SteamGenerator.water_temp,self.steam_temp=heat_exchange(self.SteamGenerator.water_temp,self.steam_temp,0.05*(0.005+self.SteamGenerator.steam_valve*(100-0.005)),dt)
-        self.SteamGenerator.pressure,self.steam_pressure=heat_exchange(self.SteamGenerator.water_temp,self.pressure,0.05*(0.002+self.SteamGenerator.steam_valve*(100-0.002))*(1.0-self.steam*0.999),dt)
-        self.force=(self.steam*self.pressure*self.steam_temp)/400
-        self.RPM=lerp(self.RPM,self.force,dt)
-        self.generation=(self.RPM*self.force)
-        self.total_generation+=self.generation*dt
-        self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.9)
 light_1=LightSource(400,300,300,0.5,500)
 light_2=LightSource(400,300,300,0.5,500)
 PM=PlayerManager()
@@ -1333,9 +1254,11 @@ sector_names=["A","B","C","D","E","F","G","H"]
 boiling_point_meter=Meter(60,100,150,80,50,0,200,40)
 water_level_meter=Meter(60,10,150,80,50,0,7000,40)
 void_meter=Meter(60,190,150,80,50,0,80,40)
-reactor=Reactor("default")
-sg=SteamGenerator(reactor,"default")
-turbine=Turbine(sg)
+sg1=SteamGenerator("first",1)
+sg2=SteamGenerator("second",2)
+Circ1=CircSystems(None,None,sg1,1)
+Circ2=CircSystems(None,None,sg2,2)
+turbine=Turbine()
 for iy in range(grid_size):
     row=[]
     water_row=[]
@@ -1349,7 +1272,7 @@ for iy in range(grid_size):
             area=sector_names[sector_index]
         else:
             area=None
-        cell=GridCell(x,y,ix,iy,area,reactor)
+        cell=GridCell(x,y,ix,iy,area)
         if area is None:
             cell.uranium_mass=0.0
             cell.neutron=0.0
@@ -1363,10 +1286,12 @@ for row in grid:
         cell.w_cell.get_neighbor()
 for row in grid:
     for cell in row:
-        if cell.iy==10 and cell.ix==17:
-            reactor.CircSys.entrance=cell
         if cell.iy==10 and cell.ix==2:
-            reactor.CircSys.exit=cell
+            Circ1.entrance=cell
+            Circ1.exit=cell
+        if cell.iy==10 and cell.ix==17:
+            Circ2.entrance=cell
+            Circ2.exit=cell
 pygame.init()
 screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("Knob Test")
@@ -1445,17 +1370,10 @@ while running:
     screen.fill((60, 60, 60))
     for row in grid:
         for cell in row:
-            if cell.Area is not None:
-                all_cell_temp.append(cell.temp)
-            cell_temp_total=sum(all_cell_temp)
-            reactor.avg_temp=cell_temp_total/208
-    for row in grid:
-        for cell in row:
             if current_control_panel==1:
                 cell.get_color()
                 cell.draw(screen)
                 cell.w_cell.draw(screen)
-    reactor.avg_temp=cell_temp_total/208
     selected_area.clear()
     for button in buttons:
         if current_control_panel==1:
@@ -1496,18 +1414,14 @@ while running:
         knob.draw(screen)
     for pump in pumps:
         pump.update()
-    reactor.update()
-    reactor.CircSys.update()
-    sg.update()
-    turbine.update()
+
+    Circ1.update()
+    Circ2.update()
     sm.update()
     sm.draw(screen,500,40)
     plant_terminal.draw(screen)
-    boiling_point_meter.value=reactor.boiling_point
     boiling_point_meter.update()
-    water_level_meter.value=reactor.water_level
     water_level_meter.update()
-    void_meter.value=reactor.void
     void_meter.update()
     PM.update(sm.rank_dur,900,0)
     PM.draw(screen,700,300)
