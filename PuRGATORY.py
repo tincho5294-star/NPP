@@ -1124,10 +1124,14 @@ class CircSystems:    # ah shi here we go again
         self.exit=exit_cell
         self.inlet_valve=1
         self.outlet_valve=1
-        self.coolant_flow_rate=0
         self.demin_dur=120000
         self.number=number
+        self.pressurizer_temp=20
+        self.pressurizer_void=0
+        self.pressurizer_pressure=1
         self.SG=SG
+        self.VCT_boron=0
+        self.VCT_water=0
         self.CrossOver_entry=[]
         if self.number==1:
             self.CVCS_entry=[]
@@ -1146,28 +1150,32 @@ class CircSystems:    # ah shi here we go again
         
     def update(self):
         if self.entrance is not None:
-            self.coolant_flow_rate=pumps[0].force
+            self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt**2)
             receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
-            self.water_entry.append({"amount":receiving,"velocity":self.entrance.w_cell.water_velocity,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+            self.water_entry.append({"amount":receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+            self.CrossOver_entry.append({"amount":450,"velocity":(self.exit.w_cell.pressure-self.SG.pressure),"progress":0,"temp":self.SG.water_temp,"pressure":self.SG.pressure,"void":0})
             self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
+            self.CVCS_entry=[p for p in self.CVCS_entry if p["amount"]>0]
+            self.CrossOver_entry=[p for p in self.CrossOver_entry if p["amount"]>0]
             for i,p in enumerate(self.water_entry):
-                p["velocity"]=lerp(p["velocity"],self.coolant_flow_rate,dt)
+                flow=pumps[0].pressure-self.exit.w_cell.pressure
+                p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(1+p["velocity"])*((p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
+                p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
                 if p["progress"]>=1:
-                    if p["amount"]<=(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure)):
-                        if (p["pressure"]-self.exit.w_cell.pressure)>0:
+                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if p["velocity"]>0:
                             self.exit.w_cell.mass+=p["amount"]
                             p["amount"]=0
-                    if self.exit.w_cell.mass<=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure)):
-                        if (p["pressure"]-self.exit.w_cell.pressure)<0:
+                    if self.exit.w_cell.mass<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if p["velocity"]<0:
                             p["amount"]+=self.exit.w_cell.mass
                             self.exit.w_cell.mass=0
                     else:
-                        p["amount"]=p["amount"]-(self.outlet_valve*(p["velocity"]+1e-6)*dt*(p["pressure"]-self.exit.w_cell.pressure))
-                        self.exit.w_cell.mass+=(self.outlet_valve*(self.exit.w_cell.water_velocity+1e-6)*(p["pressure"]-self.exit.w_cell.pressure))
-                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["velocity"]*self.outlet_valve,dt)
+                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
                     p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
@@ -1185,11 +1193,46 @@ class CircSystems:    # ah shi here we go again
                 if later is not None:
                     current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
                     current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(60*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
+            for i,p in enumerate(self.CrossOver_entry):
+                flow=pumps[0].pressure-self.exit.w_cell.pressure
+                p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
+                p["progress"]+=(1/15)*p["velocity"]*dt
+                p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
+                if p["progress"]>=1:
+                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if p["velocity"]>0:
+                            self.exit.w_cell.mass+=p["amount"]
+                            p["amount"]=0
+                    if self.exit.w_cell.mass<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if p["velocity"]<0:
+                            p["amount"]+=self.exit.w_cell.mass
+                            self.exit.w_cell.mass=0
+                    else:
+                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
+                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
+                if (0.6-dt)<=p["progress"]<=(0.6+dt):
+                    p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
+                if 0.1<=p["progress"]<=0.4:
+                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,pumps[0].force,dt)
+                        
+                p["progress"]=clamp(p["progress"],0,1)
+                p["amount"]=max(0,p["amount"])
+                previous=self.CrossOver_entry[i-1] if i>0 else None
+                current=p
+                later = self.CrossOver_entry[i+1] if i+1 < len(self.CrossOver_entry) else None
+                if previous is not None:
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
+                if later is not None:
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(60*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
         if self.number==1:
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             for i_shit,shit_current in enumerate(self.CVCS_entry):
-                flow_rate=pumps[1].force
-                shit_current["velocity"]=lerp(shit_current["velocity"],flow_rate,dt)
+                flow=pumps[0].pressure-self.exit.w_cell.pressure
+                shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
                 shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
                 if 4.984<=shit_current["progress"]<=5.016:
                     if self.demin_dur>=3*(knobs[7].value/100):
@@ -1208,12 +1251,12 @@ class CircSystems:    # ah shi here we go again
                     shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],max(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))*abs(1-(shit_current["velocity"]-shit_later["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
-        self.force=0
+        self.pressure=0
         self.parent_knob=parent_knob
         self.toggle=True #TODO: gotta make parent toggle knob somewhere i think
     def update(self):
-        target_force=(self.parent_knob.value/100)
-        self.force=lerp(self.force,target_force if self.toggle else 0,dt*2 if self.toggle else dt)
+        target_pressure=(self.parent_knob.value/100)*17
+        self.pressure=lerp(self.pressure,target_pressure,dt)
 class SteamGenerator:
     def __init__(self,name,number):
         self.name=name
