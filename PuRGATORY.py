@@ -1150,6 +1150,7 @@ class CircSystems:    # ah shi here we go again
         
     def update(self):
         if self.entrance is not None:
+            CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
             self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt**2)
             receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
@@ -1210,6 +1211,15 @@ class CircSystems:    # ah shi here we go again
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                if p["progress"]<=0:
+                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if p["velocity"]<0:
+                            self.SG.water_mass+=p["amount"]
+                            p["amount"]=0
+                    else:
+                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                
                     p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
                     p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
