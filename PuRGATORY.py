@@ -1138,8 +1138,10 @@ class CircSystems:    # ah shi here we go again
         self.water_entry=[]
         for p in range(626):
             step=p*(dt*0.1)
-            prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
+            letdown_prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"Letdown"}
+            prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"Main"}
             self.water_entry.append(prefilled_water)
+            self.water_entry.append(letdown_prefilled_water)
             CO_prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
             self.CrossOver_entry.append(CO_prefilled_water)
         if self.number==1:
@@ -1225,8 +1227,6 @@ class CircSystems:    # ah shi here we go again
                 
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
-                if 0.1<=p["progress"]<=0.4:
-                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,pumps[0].force,dt)
                         
                 p["progress"]=clamp(p["progress"],0,1)
                 p["amount"]=max(0,p["amount"])
