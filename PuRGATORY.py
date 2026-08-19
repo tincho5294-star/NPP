@@ -1138,10 +1138,8 @@ class CircSystems:    # ah shi here we go again
         self.water_entry=[]
         for p in range(626):
             step=p*(dt*0.1)
-            letdown_prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"Letdown"}
-            prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"Main"}
+            prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
             self.water_entry.append(prefilled_water)
-            self.water_entry.append(letdown_prefilled_water)
             CO_prefilled_water={"amount":7000*dt,"velocity":0,"progress":step,"temp":20,"boron":0,"pressure":1,"void":0}
             self.CrossOver_entry.append(CO_prefilled_water)
         if self.number==1:
@@ -1205,12 +1203,12 @@ class CircSystems:    # ah shi here we go again
                     if p["progress"]>=1:
                         if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
                             if p["velocity"]>0:
-                                self.exit.w_cell.mass+=p["amount"]
+                                e["amount"]+=p["amount"]
                                 p["amount"]=0
-                        if self.exit.w_cell.mass<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                        if e["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
                             if p["velocity"]<0:
-                                p["amount"]+=self.exit.w_cell.mass
-                                self.exit.w_cell.mass=0
+                                p["amount"]+=e["amount"]
+                                e["amount"]=0
                         else:
                             p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                             self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
