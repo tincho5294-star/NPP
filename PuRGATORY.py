@@ -1214,11 +1214,11 @@ class CircSystems:    # ah shi here we go again
                         p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,dt)
                 if p["progress"]<=0:
                     if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
-                        self.SG.water_mass+=p["amount"]
+                        e["amount"]+=p["amount"]
                         p["amount"]=0
                     else:
                         p["amount"]-=p["velocity"]*dt*p["amount"]
-                        self.SG.water_mass+=p["velocity"]*dt*p["amount"]
+                        e["amount"]+=p["velocity"]*dt*p["amount"]
                 
                         
                 p["progress"]=clamp(p["progress"],0,1)
