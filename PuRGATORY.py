@@ -1201,30 +1201,25 @@ class CircSystems:    # ah shi here we go again
                 p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
                 for e in CO_exits:
                     if p["progress"]>=1:
-                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
-                            if p["velocity"]>0:
-                                e["amount"]+=p["amount"]
-                                p["amount"]=0
-                        if e["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
-                            if p["velocity"]<0:
-                                p["amount"]+=e["amount"]
-                                e["amount"]=0
+                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]>0:
+                            e["amount"]+=p["amount"]
+                            p["amount"]=0
+                        if e["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
+                            p["amount"]+=e["amount"]
+                            e["amount"]=0
                         else:
                             p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                            self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
-                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
-                    if p["progress"]<=0:
-                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
-                            if p["velocity"]<0:
-                                self.SG.water_mass+=p["amount"]
-                                p["amount"]=0
-                        else:
-                            p["amount"]-=p["velocity"]*dt*p["amount"]
-                            self.SG.water_mass+=p["velocity"]*dt*p["amount"]
+                            e["amount"]+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
+                        p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,dt)
+                if p["progress"]<=0:
+                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
+                        self.SG.water_mass+=p["amount"]
+                        p["amount"]=0
+                    else:
+                        p["amount"]-=p["velocity"]*dt*p["amount"]
+                        self.SG.water_mass+=p["velocity"]*dt*p["amount"]
                 
-                if (0.6-dt)<=p["progress"]<=(0.6+dt):
-                    p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
                         
                 p["progress"]=clamp(p["progress"],0,1)
                 p["amount"]=max(0,p["amount"])
