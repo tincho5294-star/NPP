@@ -1249,8 +1249,8 @@ class CircSystems:    # ah shi here we go again
                 shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
                 if shit_previous is not None:
                     #shit_yourself()
-                    shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
-                    shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+                    shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
+                    shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
                 if shit_later is not None:
                     shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
                     shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
