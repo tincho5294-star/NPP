@@ -1229,10 +1229,10 @@ class CircSystems:    # ah shi here we go again
                 later = self.CrossOver_entry[i+1] if i+1 < len(self.CrossOver_entry) else None
                 if previous is not None:
                     previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
                 if later is not None:
-                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
-                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(60*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
         if self.number==1:
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             RX_1=[p for p in self.CVCS_entry if 0.2<=p["progress"]<=0.3]
