@@ -1253,7 +1253,7 @@ class CircSystems:    # ah shi here we go again
                     shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],max(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))*(1/abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
                 if shit_later is not None:
                     shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],max(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])),0),dt)
-                    shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],max(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))*(1/abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+                    shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],max(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))*abs(shit_current["velocity"]-shit_later["velocity"]),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
