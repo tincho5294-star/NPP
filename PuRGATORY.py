@@ -997,7 +997,7 @@ class GridCell:
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
-            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,7*(self.uranium_mass/3.5),7*(n.uranium_mass/3.5),0.005,dt)
+            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         try:
@@ -1076,16 +1076,16 @@ class GridCell:
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
                 self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.boron,n.boron=heat_exchange(self.boron,n.boron,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.boiling=self.temp>self.boiling_point
-                self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,0.016,dt)
+                self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
                 self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
@@ -1178,8 +1178,8 @@ class CircSystems:    # ah shi here we go again
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
-                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,dt)
+                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
+                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
                 if 0.1<=p["progress"]<=0.4:
