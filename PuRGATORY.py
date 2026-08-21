@@ -980,7 +980,7 @@ class GridCell:
         if self.Area is None:
             return
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,dt)
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
@@ -997,7 +997,7 @@ class GridCell:
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
-            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,0.005,dt)
+            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,7*(self.uranium_mass/3.5),7*(n.uranium_mass/3.5),0.005,dt)
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         try:
