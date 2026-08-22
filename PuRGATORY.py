@@ -44,10 +44,25 @@ def lerp_color(c1, c2, t):
     )
 def clamp(v,a,b):
     return max(a,min(b,v))
-def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
+def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt,exchange_type):
     t=clamp(flow_rate*dt,0,0.5)
-    new_a_temp=a_temp+((b_temp-a_temp)/a_mass)*t
-    new_b_temp=b_temp+((a_temp-b_temp)/b_mass)*t
+    if exchange_type=="heat":
+        a_thermal=(a_temp+273.15)*a_mass
+        b_thermal=(b_temp+273.15)*b_mass
+        new_a_thermal=lerp(a_thermal,b_thermal,t)
+        new_b_thermal=lerp(b_thermal,a_thermal,t)
+        new_a_temp=new_a_thermal/a_mass-273.15
+        new_b_temp=new_b_thermal/b_mass-273.15
+    elif exchange_type=="velocity":
+        a_p=a_temp*a_mass
+        b_p=b_temp*b_mass
+        new_a_p=lerp(a_p,b_p,t)
+        new_b_p=lerp(b_p,a_p,t)
+        new_a_temp=new_a_p/a_mass
+        new_b_temp=new_b_p/b_mass
+    else:
+        new_a_temp=lerp(a_temp,b_temp,t)
+        new_b_temp=lerp(b_temp,a_temp,t)
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -980,7 +995,7 @@ class GridCell:
         if self.Area is None:
             return
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
+            self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,1,1,dt,"neutron") #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
@@ -997,7 +1012,7 @@ class GridCell:
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
-            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
+            self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt,"heat")
         if not math.isfinite(self.next_temp):
             self.next_temp=self.temp
         try:
@@ -1076,12 +1091,15 @@ class GridCell:
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
+                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt,"heat")
                 self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
                     touching_area=(7000-(abs(n.level-self.level)))
-                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt,"velocity")
+                    self_force=self.mass*self.water_velocity
+                    n_force=n.mass*n.water_velocity
+                    new_self_water_direction=self.water_direction+(n.water_direction-self.water_direction)*n_force
+                    #self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt,"direction")
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.boiling=self.temp>self.boiling_point
