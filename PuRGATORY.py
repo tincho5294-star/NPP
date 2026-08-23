@@ -984,7 +984,6 @@ class GridCell:
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
-        self.neutron_speed=clamp(self.neutron_speed,0,1.3)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         if not math.isfinite(reaction):
             reaction=0
@@ -1091,8 +1090,8 @@ class GridCell:
                     self.void_temp=self.temp
                 self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
-                evaporation=max((0.1*self.temp)*dt,0)
-                condensation=max((0.02*self.pressure*self.void)*dt,0)
+                evaporation=max(0.1*self.temp*dt,0)
+                condensation=max(0.02*self.pressure*dt,0)
                 if self.void+(evaporation-condensation)<0:
                     self.mass+=self.void
                     self.void=0
