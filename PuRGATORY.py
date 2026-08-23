@@ -46,8 +46,8 @@ def clamp(v,a,b):
     return max(a,min(b,v))
 def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     t=clamp(flow_rate*dt,0,0.5)
-    new_a_temp=a_temp+((b_temp-a_temp)/a_mass)*t
-    new_b_temp=b_temp+((a_temp-b_temp)/b_mass)*t
+    new_a_temp=a_temp+((b_temp-a_temp)/(a_mass+1e-6))*t
+    new_b_temp=b_temp+((a_temp-b_temp)/(b_mass+1e-6))*t
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -945,7 +945,7 @@ class GridCell:
         self.Area=area
         self.search_size=20
         self.next_neutrons=1
-        self.neutron_speed=0.2
+        self.neutron_speed=1.2
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
         R=clamp((255*(self.temp/325)),0,255)
@@ -985,7 +985,7 @@ class GridCell:
         if not math.isfinite(self.neutron_speed):
             self.neutron_speed=0.2
         self.neutron_speed=clamp(self.neutron_speed,0,1.3)
-        reaction=(self.neutron*self.uranium_mass*(1/self.neutron_speed))
+        reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         if not math.isfinite(reaction):
             reaction=0
         burn_rate=0.991
@@ -1042,8 +1042,8 @@ class GridCell:
             self.max_hypot=math.hypot(7.5,30)
             self.void=0
             self.void_temp=self.temp
-            self.boiling_point=320
-            self.pressure=15
+            self.boiling_point=100
+            self.pressure=1
             self.boron=0
             self.boron_conc=0
             self.density=safe_div(self.mass,self.level)
@@ -1079,8 +1079,9 @@ class GridCell:
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
                 self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
-                    touching_area=(7000-(abs(n.level-self.level)))
-                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_velocity=abs(self.water_velocity)
+                    n.water_velocity=abs(n.water_velocity)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
@@ -1089,20 +1090,24 @@ class GridCell:
                 if not self.boiling:
                     self.void_temp=self.temp
                 self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
-                self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
-                evaporation=(0.1*self.temp)*dt
-                condensation=(0.02*self.pressure*self.void)*dt
-                self.void+=evaporation-condensation
-                self.mass-=evaporation-condensation
+                #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
+                evaporation=max((0.1*self.temp)*dt,0)
+                condensation=max((0.02*self.pressure*self.void)*dt,0)
+                if self.void+(evaporation-condensation)<0:
+                    self.mass+=self.void
+                    self.void=0
+                else:
+                    self.void=max(self.void+(evaporation-condensation),0)
+                    self.mass=max(self.mass-(evaporation-condensation),0)
                 self.boron_conc=safe_div(self.boron,self.mass)
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
         def draw(self,screen):
             if self.owner.Area is not None:
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(7.5*self.water_velocity)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(7.5*self.water_velocity)
-                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
-                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*min(7.5*self.water_velocity,7.5)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity,0,7.5)
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity,0,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
@@ -1133,6 +1138,7 @@ class CircSystems:    # ah shi here we go again
         self.VCT_boron=0
         self.VCT_water=0
         self.CrossOver_entry=[]
+        self.cell_pipe_direction=180 if self.number==1 else 360
         if self.number==1:
             self.CVCS_entry=[]
         self.water_entry=[]
@@ -1155,12 +1161,16 @@ class CircSystems:    # ah shi here we go again
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
             self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt**2)
-            receiving=(450*self.inlet_valve*dt)*self.entrance.w_cell.water_velocity if ((450*dt)*self.entrance.w_cell.water_velocity)<=self.entrance.w_cell.mass*dt else self.entrance.w_cell.mass
-            self.entrance.w_cell.mass=self.entrance.w_cell.mass-receiving if receiving<=self.entrance.w_cell.mass else 0
-            self.water_entry.append({"amount":receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+            exit_receiving=max(((450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            entrance_receiving=max(((450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
+            self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if entrance_receiving<=self.entrance.w_cell.mass else 0
+            self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if exit_receiving<=self.exit.w_cell.mass else 0
+            self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+            self.water_entry.append({"amount":exit_receiving,"velocity":0,"progress":1,"temp":self.exit.w_cell.temp,"pressure":self.exit.w_cell.pressure,"void":0})
             self.CrossOver_entry.append({"amount":450,"velocity":(self.exit.w_cell.pressure-self.SG.pressure),"progress":0,"temp":self.SG.water_temp,"pressure":self.SG.pressure,"void":0})
             self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
-            self.CVCS_entry=[p for p in self.CVCS_entry if p["amount"]>0]
+            if self.number==1:
+                self.CVCS_entry=[p for p in self.CVCS_entry if p["amount"]>0]
             self.CrossOver_entry=[p for p in self.CrossOver_entry if p["amount"]>0]
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
@@ -1180,10 +1190,11 @@ class CircSystems:    # ah shi here we go again
                         self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                     p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
                     p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
+                    self.exit.w_cell.water_velocity=abs(self.exit.w_cell.water_velocity)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
                 if 0.1<=p["progress"]<=0.4:
-                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,pumps[0].force,dt)
+                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,p["amount"],self.SG.water_mass,p["velocity"],dt)
                         
                 p["progress"]=clamp(p["progress"],0,1)
                 p["amount"]=max(0,p["amount"])
@@ -1191,11 +1202,11 @@ class CircSystems:    # ah shi here we go again
                 current=p
                 later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                 if previous is not None:
-                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
                 if later is not None:
-                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
-                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],max(60*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],max(60*(dt-abs((later["progress"]-dt)-current["progress"]))*abs(1-(current["velocity"]-later["velocity"])),0),dt)
             for i,p in enumerate(self.CrossOver_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
@@ -1213,13 +1224,13 @@ class CircSystems:    # ah shi here we go again
                             e["amount"]+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
                         p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,dt)
-                if p["progress"]<=0:
-                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
-                        e["amount"]+=p["amount"]
-                        p["amount"]=0
-                    else:
-                        p["amount"]-=p["velocity"]*dt*p["amount"]
-                        e["amount"]+=p["velocity"]*dt*p["amount"]
+                    if p["progress"]<=0:
+                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
+                            e["amount"]+=p["amount"]
+                            p["amount"]=0
+                        else:
+                            p["amount"]-=p["velocity"]*dt*p["amount"]
+                            e["amount"]+=p["velocity"]*dt*p["amount"]
                 
                         
                 p["progress"]=clamp(p["progress"],0,1)
@@ -1228,18 +1239,18 @@ class CircSystems:    # ah shi here we go again
                 current=p
                 later = self.CrossOver_entry[i+1] if i+1 < len(self.CrossOver_entry) else None
                 if previous is not None:
-                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
                 if later is not None:
-                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
-                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
         if self.number==1:
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             RX_1=[p for p in self.CVCS_entry if 0.2<=p["progress"]<=0.3]
             RX_2=[p for p in self.CVCS_entry if 0.8<=p["progress"]<=0.9]
             for p in RX_1:
                 for p2 in RX_2:
-                    p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],abs(p["velocity"]-p2["velocity"]),dt)
+                    p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],p["amount"],p2["amount"],abs(p["velocity"]-p2["velocity"]),dt)
             for i_shit,shit_current in enumerate(self.CVCS_entry):
                 shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
                 shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
@@ -1249,11 +1260,11 @@ class CircSystems:    # ah shi here we go again
                 shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
                 if shit_previous is not None:
                     #shit_yourself()
-                    shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
-                    shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
+                    shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
+                    shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
                 if shit_later is not None:
-                    shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
-                    shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+                    shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
+                    shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
@@ -1268,9 +1279,9 @@ class SteamGenerator:
         self.water_temp=20
         self.pressure=6
         self.steam_mass=0
-        self.water_mass=2000
+        self.water_mass=140000
         self.water_flow=1
-        self.water_level=2000
+        self.water_level=140000
         self.number=number
         self.steam_valve=1
         self.steam=0
