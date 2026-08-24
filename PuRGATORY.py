@@ -1088,7 +1088,7 @@ class GridCell:
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)*(1+self.water_velocity)
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1134,6 +1134,8 @@ class CircSystems:    # ah shi here we go again
         self.pressurizer_void=0
         self.pressurizer_pressure=1
         self.SG=SG
+        self.start=None
+        self.last=None
         self.VCT_boron=0
         self.VCT_water=0
         self.CrossOver_entry=[]
@@ -1162,8 +1164,12 @@ class CircSystems:    # ah shi here we go again
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
             self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt)
-            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-(p for p in meh)["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
-            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-(p for p in wut)["pressure"]+flow)*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
+            for l in meh:
+                self.last=l
+            for s in wut:
+                self.start=s
+            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if entrance_receiving<=self.entrance.w_cell.mass else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if exit_receiving<=self.exit.w_cell.mass else 0
             self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
@@ -1178,17 +1184,17 @@ class CircSystems:    # ah shi here we go again
                 p["progress"]+=(1/15)*p["velocity"]*dt
                 p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
                 if p["progress"]>=1:
-                    if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                    if p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"]:
                         if p["velocity"]>0:
                             self.exit.w_cell.mass+=p["amount"]
                             p["amount"]=0
-                    if self.exit.w_cell.mass<=(self.outlet_valve*p["velocity"]*dt)*p["amount"]:
+                    if self.exit.w_cell.mass<=self.outlet_valve*p["velocity"]*dt*p["amount"]:
                         if p["velocity"]<0:
                             p["amount"]+=self.exit.w_cell.mass
                             self.exit.w_cell.mass=0
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                        self.exit.w_cell.mass+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
                     p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
                     p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
                     self.exit.w_cell.water_velocity=abs(self.exit.w_cell.water_velocity)
