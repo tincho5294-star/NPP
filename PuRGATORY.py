@@ -1157,10 +1157,11 @@ class CircSystems:    # ah shi here we go again
         
     def update(self):
         if self.entrance is not None:
+            WE_last=self.water_entry[len(self.water_entry)]
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
             self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt**2)
-            exit_receiving=max(((450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            exit_receiving=max(((450*self.outlet_valve*dt)*((self.exit.w_cell.pressure-WE_last["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
             entrance_receiving=max(((450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if entrance_receiving<=self.entrance.w_cell.mass else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if exit_receiving<=self.exit.w_cell.mass else 0
