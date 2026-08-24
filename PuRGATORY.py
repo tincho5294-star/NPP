@@ -1071,7 +1071,7 @@ class GridCell:
                 oscillation=random.uniform(-0.5,0.5)
                 self.viscosity=10/self.temp
                 D=0.01
-                reynolds=(((self.water_velocity*5)*D)/self.viscosity)*10000
+                reynolds=(((self.water_velocity)*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
@@ -1091,7 +1091,7 @@ class GridCell:
                 self.pressure=((((self.mass+(self.void*1600))*self.temp)/700000)/20)*(1+self.water_velocity)
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
-                condensation=max(0.02*self.pressure*dt,0)
+                condensation=max(2*self.pressure*dt,0)
                 if self.void+(evaporation-condensation)<0:
                     self.mass+=self.void
                     self.void=0
@@ -1157,12 +1157,13 @@ class CircSystems:    # ah shi here we go again
         
     def update(self):
         if self.entrance is not None:
-            WE_last=self.water_entry[len(self.water_entry)]
+            meh=[p for p in self.water_entry if p["progress"]>=1]
+            wut=[p for p in self.water_entry if p["progress"]<=0]
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
-            self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt**2)
-            exit_receiving=max(((450*self.outlet_valve*dt)*((self.exit.w_cell.pressure-WE_last["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
-            entrance_receiving=max(((450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
+            self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt)
+            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-(p for p in meh)["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-(p for p in wut)["pressure"]+flow)*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if entrance_receiving<=self.entrance.w_cell.mass else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if exit_receiving<=self.exit.w_cell.mass else 0
             self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
