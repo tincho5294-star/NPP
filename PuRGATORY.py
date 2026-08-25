@@ -1078,7 +1078,7 @@ class GridCell:
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
                 self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
-                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
                     n.water_velocity=abs(n.water_velocity)
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
@@ -1170,8 +1170,8 @@ class CircSystems:    # ah shi here we go again
                 self.start=s
             exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
             entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
-            self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if entrance_receiving<=self.entrance.w_cell.mass else 0
-            self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if exit_receiving<=self.exit.w_cell.mass else 0
+            self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if self.entrance.w_cell.mass-entrance_receiving>=0 else 0
+            self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if self.exit.w_cell.mass-exit_receiving>=0 else 0
             self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
             self.water_entry.append({"amount":exit_receiving,"velocity":0,"progress":1,"temp":self.exit.w_cell.temp,"pressure":self.exit.w_cell.pressure,"void":0})
             self.CrossOver_entry.append({"amount":450,"velocity":(self.exit.w_cell.pressure-self.SG.pressure),"progress":0,"temp":self.SG.water_temp,"pressure":self.SG.pressure,"void":0})
@@ -1184,19 +1184,16 @@ class CircSystems:    # ah shi here we go again
                 p["progress"]+=(1/15)*p["velocity"]*dt
                 p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
                 if p["progress"]>=1:
-                    if p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"]:
-                        if p["velocity"]>0:
-                            self.exit.w_cell.mass+=p["amount"]
-                            p["amount"]=0
-                    if self.exit.w_cell.mass<=self.outlet_valve*p["velocity"]*dt*p["amount"]:
-                        if p["velocity"]<0:
-                            p["amount"]+=self.exit.w_cell.mass
-                            self.exit.w_cell.mass=0
+                    if p["velocity"]<0:
+                        pass
+                    elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                        self.exit.w_cell.mass+=p["amount"]
+                        p["amount"]=0
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
                     p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
-                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
+                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
                     self.exit.w_cell.water_velocity=abs(self.exit.w_cell.water_velocity)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
@@ -1217,7 +1214,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CrossOver_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(1+p["velocity"])*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
+                p["pressure"]=(1+p["velocity"])*((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)
                 for e in CO_exits:
                     if p["progress"]>=1:
                         if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]>0:
@@ -1304,6 +1301,7 @@ class Turbine:
         self.generation=0
 light_1=LightSource(400,300,300,0.5,500)
 light_2=LightSource(400,300,300,0.5,500)
+print_toggle=True
 PM=PlayerManager()
 last_knob_name=None
 juggle_history=[]
@@ -1433,7 +1431,12 @@ while running:
         for cell in row:
             cell.update()
             cell.w_cell.update()
-
+            if print_toggle:
+                print(f"pressure:{cell.w_cell.pressure}")
+                print(f"mass:{cell.w_cell.mass}")
+                print(f"temp:{cell.w_cell.temp}")
+                print(f"velocity:{cell.w_cell.water_velocity}")
+                print(f"void:{cell.w_cell.void}")
     for button in buttons:
         if current_control_panel==1:
             button.update()
