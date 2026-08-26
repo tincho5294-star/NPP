@@ -1032,7 +1032,7 @@ class GridCell:
             self.mass=self.max_mass
             self.level=self.max_mass
             self.water_velocity=0
-            self.water_direction=normalize360(360)
+            self.water_direction=360
             self.offset_x=(self.x+7.5)+math.cos(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.offset_y=(self.y+7.5)-math.sin(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.turbulence_intensity=0
@@ -1065,6 +1065,7 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
+                self.water_direction=normalize360(self.water_direction)
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.level=self.mass*(self.temp**0.016)
                 self.density=safe_div(self.mass,self.level)
@@ -1081,6 +1082,10 @@ class GridCell:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
                     n.water_velocity=abs(n.water_velocity)
+                    if self.water_direction<n.water_direction:
+                        self.water_direction=self.water_direction+360
+                    elif n.water_direction<self.water_direction:
+                        n.water_direction=n.water_direction+360
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
@@ -1101,6 +1106,7 @@ class GridCell:
                 self.boron_conc=safe_div(self.boron,self.mass)
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
+                self.water_direction=normalize360(self.water_direction)
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
@@ -1139,7 +1145,7 @@ class CircSystems:    # ah shi here we go again
         self.VCT_boron=0
         self.VCT_water=0
         self.CrossOver_entry=[]
-        self.cell_pipe_direction=180 if self.number==1 else 360
+        self.cell_pipe_direction=180 if self.number==1 else 0
         if self.number==1:
             self.CVCS_entry=[]
         self.water_entry=[]
@@ -1168,8 +1174,8 @@ class CircSystems:    # ah shi here we go again
                 self.last=l
             for s in wut:
                 self.start=s
-            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
-            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
+            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*(1-abs(normalize360(self.exit.w_cell.water_direction)-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(normalize360(self.entrance.w_cell.water_direction)-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if self.entrance.w_cell.mass-entrance_receiving>=0 else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if self.exit.w_cell.mass-exit_receiving>=0 else 0
             self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
@@ -1363,7 +1369,6 @@ for row in grid:
             Circ2.exit=cell
 pygame.init()
 screen = pygame.display.set_mode((800, 600),pygame.FULLSCREEN | pygame.SCALED)
-pygame.display.set_caption("Knob Test")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont(None, 24)
 sm=StyleManager()
@@ -1431,12 +1436,6 @@ while running:
         for cell in row:
             cell.update()
             cell.w_cell.update()
-            if print_toggle:
-                print(f"pressure:{cell.w_cell.pressure}")
-                print(f"mass:{cell.w_cell.mass}")
-                print(f"temp:{cell.w_cell.temp}")
-                print(f"velocity:{cell.w_cell.water_velocity}")
-                print(f"void:{cell.w_cell.void}")
     for button in buttons:
         if current_control_panel==1:
             button.update()
