@@ -1093,7 +1093,7 @@ class GridCell:
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)*(1+self.water_velocity)
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)/(self.water_velocity**2+1e-6)
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1188,7 +1188,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)/(p["velocity"]+1e-6)
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)/(p["velocity"]**2+1e-6)
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
