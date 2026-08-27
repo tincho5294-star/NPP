@@ -46,8 +46,8 @@ def clamp(v,a,b):
     return max(a,min(b,v))
 def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     t=clamp(flow_rate*dt,0,0.5)
-    new_a_temp=a_temp+((b_temp-a_temp)/(a_mass+1e-6))*t
-    new_b_temp=b_temp+((a_temp-b_temp)/(b_mass+1e-6))*t
+    new_a_temp=a_temp+((b_temp-a_temp)/(max(a_mass,1)))*t
+    new_b_temp=b_temp+((a_temp-b_temp)/(max(b_mass,1)))*t
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -1072,7 +1072,7 @@ class GridCell:
                 oscillation=random.uniform(-0.5,0.5)
                 self.viscosity=10/self.temp
                 D=0.01
-                reynolds=(((self.water_velocity)*D)/self.viscosity)*10000
+                reynolds=(((abs(self.water_velocity))*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
@@ -1093,7 +1093,7 @@ class GridCell:
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)/(self.water_velocity**2+1e-6)
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-self.water_velocity
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1188,7 +1188,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)/(p["velocity"]**2+1e-6)
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-p["velocity"]
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
