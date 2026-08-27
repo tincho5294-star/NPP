@@ -1188,7 +1188,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(1+abs(p["velocity"]))*(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)/(p["velocity"]+1e-6)
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
