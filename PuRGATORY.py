@@ -18,7 +18,6 @@ import time
 import sys
 import math
 import random
-from collections import deque
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
@@ -620,7 +619,7 @@ class Meter:
         self.max_value=max_value
         self.latest_time=0
         self.value_surface=meter_font.render(str(round(self.value,1)),False,(255,140,0))
-        self.points=deque()
+        self.points=[]
     def value_to_y(self,value):
         value_ratio=clamp((value-self.min_value)/(self.max_value-self.min_value),0,1)
         return lerp((self.y+self.h),self.y,value_ratio)
@@ -632,8 +631,7 @@ class Meter:
         if self.value>=self.max_value:
             self.max_value=self.value
         self.points.append({"time":self.latest_time,"value":self.value})
-        while self.points and self.points[0]["time"] < self.latest_time-self.timeline_length:
-            self.points.popleft()
+        self.points=[p for p in self.points if self.lastest_time-self.timeline_length<=p["time"]<=self.latest_time]
         self.value_surface=meter_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
         pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+30,self.h+10))
