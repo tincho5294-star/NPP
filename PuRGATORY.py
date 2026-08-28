@@ -43,10 +43,14 @@ def lerp_color(c1, c2, t):
     )
 def clamp(v,a,b):
     return max(a,min(b,v))
-def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
-    t=clamp(flow_rate*dt,0,0.5)
+def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt)
+    t=flow_rate*dt
     new_a_temp=a_temp+((b_temp-a_temp)/(max(a_mass,1)))*t
     new_b_temp=b_temp+((a_temp-b_temp)/(max(b_mass,1)))*t
+    if new_a_temp>(a_temp+b_temp)*0.5 or new_a_temp<(a_temp+b_temp)*0.5:
+        new_a_temp=(a_temp+b_temp)*0.5
+    if new_b_temp>(a_temp+b_temp)*0.5 or new_b_temp<(a_temp+b_temp)*0.5:
+        new_b_temp=(a_temp+b_temp)*0.5
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
