@@ -1265,10 +1265,10 @@ class CircSystems:    # ah shi here we go again
             for i_shit,shit_current in enumerate(self.CVCS_entry):
                 shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
                 shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
-                if p["progress"]>=1:
-                    if p["velocity"]<0:
+                if shit_current["progress"]>=1:
+                    if shit_current["velocity"]<0:
                         pass
-                    elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                    elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and shit_current["velocity"]>0:
                         self.exit.w_cell.mass+=p["amount"]
                         p["amount"]=0
                     else:
