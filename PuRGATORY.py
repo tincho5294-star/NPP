@@ -43,14 +43,10 @@ def lerp_color(c1, c2, t):
     )
 def clamp(v,a,b):
     return max(a,min(b,v))
-def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt)
+def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     t=flow_rate*dt
     new_a_temp=a_temp+((b_temp-a_temp)/(max(a_mass,1)))*t
     new_b_temp=b_temp+((a_temp-b_temp)/(max(b_mass,1)))*t
-    if new_a_temp>(a_temp+b_temp)*0.5 or new_a_temp<(a_temp+b_temp)*0.5:
-        new_a_temp=(a_temp+b_temp)*0.5
-    if new_b_temp>(a_temp+b_temp)*0.5 or new_b_temp<(a_temp+b_temp)*0.5:
-        new_b_temp=(a_temp+b_temp)*0.5
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -635,7 +631,7 @@ class Meter:
         if self.value>=self.max_value:
             self.max_value=self.value
         self.points.append({"time":self.latest_time,"value":self.value})
-        self.points=[p for p in self.points if self.lastest_time-self.timeline_length<=p["time"]<=self.latest_time]
+        self.points=[p for p in self.points if self.latest_time-self.timeline_length<=p["time"]<=self.latest_time]
         self.value_surface=meter_font.render(str(round(self.value,1)),True,(255,140,0))
     def draw(self,screen):
         pygame.draw.rect(screen,(30,30,30),(self.x-5,self.y-5,self.w+30,self.h+10))
@@ -950,11 +946,13 @@ class GridCell:
         self.neutron_speed=1.2
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
-        R=clamp((255*(self.temp/325)),0,255)
-        G=clamp(safe_div((255*((2000-(self.temp*5))/500)),(self.w_cell.pressure/20)),0,255)
-        B=clamp(255*(self.w_cell.pressure/20),0,255)
+        R=clamp(5+245*(self.temp/325),0,255)
+        G=clamp(250+5*(self.temp/20),0,255)
+        B=clamp(5+70*(self.w_cell.pressure/20),0,120)
         if self.temp>400:
-            R = clamp(255 * ((1500 - self.temp) / 1100), 0, 255)
+            R=clamp(180+75*(self.temp/1500),0,255)
+            G=clamp(60+195*(self.temp/1500),0,255)
+            B=clamp(30+225*(self.temp/1500),0,255)
         self.color=(R,G,B)
     def get_neighbor(self):
         if self.Area is None:
@@ -993,8 +991,6 @@ class GridCell:
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
         self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt)
-        if not math.isfinite(self.next_neutrons):
-            self.next_neutrons=1
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
