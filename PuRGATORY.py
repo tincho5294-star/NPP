@@ -1219,19 +1219,18 @@ class CircSystems:    # ah shi here we go again
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
                 p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]
-                for e in CO_exits:
+                for e in CO_exits:                
                     if p["progress"]>=1:
-                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]>0:
+                        if p["velocity"]<0:
+                            pass
+                        elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                             e["amount"]+=p["amount"]
                             p["amount"]=0
-                        if e["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
-                            p["amount"]+=e["amount"]
-                            e["amount"]=0
                         else:
                             p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                            e["amount"]+=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                            p["amount"]+=self.outlet_valve*p["velocity"]*dt*p["amount"]
                         p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
-                        p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,dt)
+                        p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
                     if p["progress"]<=0:
                         if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
                             e["amount"]+=p["amount"]
@@ -1262,6 +1261,15 @@ class CircSystems:    # ah shi here we go again
             for i_shit,shit_current in enumerate(self.CVCS_entry):
                 shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
                 shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
+                if p["progress"]>=1:
+                    if p["velocity"]<0:
+                        pass
+                    elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                        self.exit.w_cell.mass+=p["amount"]
+                        p["amount"]=0
+                    else:
+                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
+                        self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
                 if 0.3<=shit_current["progress"]<=0.4:
                     shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                 shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
