@@ -1297,6 +1297,16 @@ class CircSystems:    # ah shi here we go again
                 current=p
                 later = self.CCW_loop_entry[i+1] if i+1 < len(self.CCW_loop_entry) else None
                 if previous is not None:
+                    if previous["progress"]<current["progress"]:
+                        previous["progress"]+=1
+                    elif current["progress"]<previous["progress"]:
+                        current["progress"]+=1
+                if later is not None:
+                    if later["progress"]<current["progress"]:
+                        later["progress"]+=1
+                    elif current["progress"]<later["progress"]:
+                        current["progress"]+=1
+                if previous is not None:
                     previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
                     previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
                 if later is not None:
