@@ -947,12 +947,8 @@ class GridCell:
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
-        G=clamp(250+5*(self.temp/20),0,255)
-        B=clamp(5+70*(self.w_cell.pressure/20),0,120)
-        if self.temp>400:
-            R=clamp(180+75*(self.temp/1500),0,255)
-            G=clamp(60+195*(self.temp/1500),0,255)
-            B=clamp(30+225*(self.temp/1500),0,255)
+        G=clamp(255-255*((self.temp-325)/575)+800*((self.temp/1500)**8),0,255)
+        B=clamp(5+70*(self.w_cell.pressure/20)+250*((self.temp/1500)**8),0,255)
         self.color=(R,G,B)
     def get_neighbor(self):
         if self.Area is None:
@@ -1132,6 +1128,7 @@ class CircSystems:    # ah shi here we go again
         self.exit=exit_cell
         self.inlet_valve=1
         self.outlet_valve=1
+        self.CCW_loop_entry=[]
         self.demin_dur=120000
         self.number=number
         self.pressurizer_temp=20
@@ -1156,10 +1153,12 @@ class CircSystems:    # ah shi here we go again
         if self.number==1:
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
+                CCW_prefilled={"amount":10000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"pressure":1,"void":0}
                 CVCS_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"main"}
                 boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"boration"}
                 self.CVCS_entry.append(CVCS_prefilled_water)
                 self.CVCS_entry.append(boration_prefilled_water)
+                self.CCW_loop_entry.append(CCW_prefilled)
         
     def update(self):
         if self.entrance is not None:
@@ -1167,6 +1166,7 @@ class CircSystems:    # ah shi here we go again
             wut=[p for p in self.water_entry if p["progress"]<=0]
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
+            CVCS_exits=[p for p in self.CrossOver_entry if 0.968<=p["progress"]<=1]
             self.pressurizer_temp=lerp(self.pressurizer_temp,self.pressurizer_temp-(knobs[2].value+knobs[3].value)+(knobs[0].value+knobs[1].value),dt)
             for l in meh:
                 self.last=l
@@ -1238,7 +1238,7 @@ class CircSystems:    # ah shi here we go again
                         else:
                             p["amount"]-=p["velocity"]*dt*p["amount"]
                             e["amount"]+=p["velocity"]*dt*p["amount"]
-                
+                    
                         
                 p["progress"]=clamp(p["progress"],0,1)
                 p["amount"]=max(0,p["amount"])
@@ -1255,21 +1255,27 @@ class CircSystems:    # ah shi here we go again
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             RX_1=[p for p in self.CVCS_entry if 0.2<=p["progress"]<=0.3]
             RX_2=[p for p in self.CVCS_entry if 0.8<=p["progress"]<=0.9]
+            LHX_1=[p for p in self.CVCS_entry if 0.5<=p["progress"]<=0.6]
+            LHX_2=[p for p in self.CCW_loop_entry if 0.5<=p["progress"]<=0.6]
             for p in RX_1:
                 for p2 in RX_2:
+                    p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],p["amount"],p2["amount"],abs(p["velocity"]-p2["velocity"]),dt)
+            for p in LHX_1:
+                for p2 in LHX_2:
                     p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],p["amount"],p2["amount"],abs(p["velocity"]-p2["velocity"]),dt)
             for i_shit,shit_current in enumerate(self.CVCS_entry):
                 shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
                 shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
-                if shit_current["progress"]>=1:
-                    if shit_current["velocity"]<0:
-                        pass
-                    elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and shit_current["velocity"]>0:
-                        self.exit.w_cell.mass+=p["amount"]
-                        p["amount"]=0
-                    else:
-                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                        self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
+                for e in CVCS_exits:
+                    if shit_current["progress"]>=1:
+                        if shit_current["velocity"]<0:
+                            pass
+                        elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                            e["amount"]+=shit_current["amount"]
+                            shit_current["amount"]=0
+                        else:
+                            shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
+                            e["amount"]+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
                 if 0.3<=shit_current["progress"]<=0.4:
                     shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                 shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
@@ -1281,6 +1287,21 @@ class CircSystems:    # ah shi here we go again
                 if shit_later is not None:
                     shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
                     shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+            for i,p in enumerate(self.CCW_loop_entry):
+                p["velocity"]=pumps[2].pressure-p["pressure"]
+                p["progress"]+=(1/15)*p["velocity"]*dt
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]   
+                p["progress"]=clamp(p["progress"]%1,0,1)
+                p["amount"]=max(0,p["amount"])
+                previous=self.CCW_loop_entry[i-1] if i>0 else None
+                current=p
+                later = self.CCW_loop_entry[i+1] if i+1 < len(self.CCW_loop_entry) else None
+                if previous is not None:
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
+                if later is not None:
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
@@ -1391,7 +1412,8 @@ knobs=[
     Knob(60,500,"Letdown Valve",1,light_1,150,value=0,radius=40,_type=2)
     ]
 knobs_2=[
-    Knob(420, 300, "Charging Pump",1,light_2,170, value=0, radius=40, _type=2)
+    Knob(420, 300, "Charging Pump",2,light_2,170, value=0, radius=40, _type=2),
+    Knob(420, 400, "CCW Pump",2,light_2,160, value=0,radius=40,_type=2)
 ]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
@@ -1408,7 +1430,8 @@ buttons = [
 ]
 pumps=[
     Pump("RCP",knobs[4]),
-    Pump("CP",knobs_2[0])
+    Pump("CP",knobs_2[0]),
+    Pump("CCWP",knobs_2[1])
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
