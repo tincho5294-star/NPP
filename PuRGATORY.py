@@ -600,7 +600,7 @@ class PlayerManager:
         h=100
         ratio=(self.health-self.min_health)/(self.max_health-self.min_health)
         HP_y=(y+h)-(h*ratio)
-        pygame.draw.rect(screen,(30,30,30),(x,y,w,h*(1-ratio)))
+        pygame.draw.rect(screen,(30,30,30),(x,y,w,(self.hard-self.min_health)/(self.max_health-self.min_health)))
         pygame.draw.rect(screen,(100,100,100),(x,y,w,h*ratio))
         pygame.draw.rect(screen,(255,0,0),(x,HP_y,w,h*ratio))
         
@@ -975,11 +975,7 @@ class GridCell:
         for n in self.neighbors:
             self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
-        if not math.isfinite(self.neutron_speed):
-            self.neutron_speed=0.2
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
-        if not math.isfinite(reaction):
-            reaction=0
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
@@ -988,17 +984,8 @@ class GridCell:
         self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
         for n in self.neighbors:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
-        if not math.isfinite(self.next_temp):
-            self.next_temp=self.temp
-        try:
-            self.uranium_mass*=burn_rate**(reaction*dt)
-        except OverflowError:
-            self.uranium_mass*=1e-33
-        if not math.isfinite(self.uranium_mass):
-            self.uranium_mass=0
+        self.uranium_mass*=burn_rate**(reaction*dt)
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        if not math.isfinite(self.next_temp):
-            self.next_temp=self.temp
         self.next_temp=max(20,self.next_temp)
         self.neutron=self.next_neutrons
         self.temp=self.next_temp
