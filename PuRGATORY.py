@@ -242,10 +242,10 @@ class StyleManager:
         self.style = [
             {"name": "CRITICAL", "score": 200},
             {"name": "SUPERCRITICAL", "score": 400},
-            {"name": "CRAM", "score": 900},
+            {"name": "CRAM", "score": 250},
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
-            {"name": "JUGGLE", "score": 900},
+            {"name": "JUGGLE", "score": 250},
             {"name": "ONSET","score": 200},
             {"name": "RECKLESS","score":5}
         ]
@@ -258,14 +258,13 @@ class StyleManager:
         self.max_display = 7
     def add_style_log(self, style_entry, timer=5):
         entry = style_entry.copy()
-        entry["timer"] = timer
         self.style_log.append(entry)
     def update(self):
         for c in self.style_log:
             if "timer" not in c:
                 self.total_style += c["score"]*self.style_multiplier
                 c["timer"] = 5
-                self.rank_dur+=c["score"]*self.style_multiplier
+                self.rank_dur=clamp(self.rank_dur+c["score"]*self.style_multiplier,0,800)
         if len(self.style_log) > self.max_display:
             self.style_log = self.style_log[-self.max_display:]
 
@@ -273,11 +272,11 @@ class StyleManager:
             c["timer"] -= 1*dt
             if c["timer"] <= 0:
                 self.style_log.remove(c)
-        self.rank_dur=clamp(self.rank_dur,0,900)
+        self.rank_dur=clamp(self.rank_dur,0,800)
         rank_number=self.rank_dur//100
-        self.current_rank=self.style_rank[int(rank_number-1)]
+        self.current_rank=self.style_rank[clamp(int(rank_number-1),0,7)]
         self.style_multiplier = clamp(self.style_multiplier - 0.1*dt,1,5)
-        self.rank_dur=clamp(self.rank_dur-(10*dt),0,900)
+        self.rank_dur=clamp(self.rank_dur-(10*dt),0,800)
     def draw(self, screen, x, y):
         target_t = clamp((self.style_multiplier - 1.0) / 4.0, 0, 1)
         self.visual_t = lerp(self.visual_t, target_t, 0.05)
@@ -587,17 +586,15 @@ class PlayerManager:
     def __init__(self):
         self.hard=0
         self.health=100
-        self.next_health=100
         self.max_health=100
         self.min_health=0
         self.payout=0
         self.wealth=120
         self.fired=False
     def update(self,style,max_style,min_style):
-        self.hard=self.max_health-self.health
+        self.hard=clamp(self.hard+10*dt,100-self.health,dt)
         target_health=self.max_health*((style-min_style)/(max_style-min_style))
-        self.next_health=lerp(self.health,target_health,dt)
-        self.health=lerp(self.health,self.next_health,0.01/(1+(self.hard/100)) if (self.next_health>self.health) else dt)
+        self.health=lerp(self.health,target_health,0.01/(1+(self.hard/100)) if (target_health>self.health) else dt)
     def draw(self,screen,x,y):
         w=20
         h=100
