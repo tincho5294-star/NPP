@@ -242,10 +242,10 @@ class StyleManager:
         self.style = [
             {"name": "CRITICAL", "score": 200},
             {"name": "SUPERCRITICAL", "score": 400},
-            {"name": "CRAM", "score": 250},
+            {"name": "CRAM", "score": 25},
             {"name": "MELTDOWN", "score": 4000},
             {"name": "LOCA", "score": 4000},
-            {"name": "JUGGLE", "score": 250},
+            {"name": "JUGGLE", "score": 25},
             {"name": "ONSET","score": 200},
             {"name": "RECKLESS","score":5}
         ]
@@ -454,8 +454,8 @@ class Knob:
                 w=9
                 first_point=(self.x+math.cos((ang+math.pi)+0.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+0.5*math.pi)*(self.radius*0.1))
                 second_point=(self.x+math.cos((ang+math.pi)+1.5*math.pi)*(self.radius*0.1),self.y-math.sin((ang+math.pi)+1.5*math.pi)*(self.radius*0.1))
-                third_point=(self.x+math.cos((ang+math.pi)-math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)-math.pi/27)*self.radius)
-                fourth_point=(self.x+math.cos((ang+math.pi)+math.pi/27)*self.radius,self.y-math.sin((ang+math.pi)+math.pi/27)*self.radius)
+                third_point=(first_point[0]+math.cos(ang)*w,first_point[1]+math.sin(ang)*w)
+                fourth_point=(second_point[0]+math.cos(ang)*w,second_point[1]+math.sin(ang)*w)
                 pygame.draw.polygon(screen,(60,60,60),[first_point,second_point,third_point,fourth_point])
                 pygame.draw.circle(screen, (60,60,60), (self.x, self.y), 9)
                 pygame.draw.polygon(screen,(250,250,250),[(left_vinx,left_viny),(right_vinx,right_viny),(vinx,viny)])
@@ -592,7 +592,7 @@ class PlayerManager:
         self.wealth=120
         self.fired=False
     def update(self,style,max_style,min_style):
-        self.hard=clamp(self.hard+10*dt,100-self.health,dt)
+        self.hard=clamp(self.hard+dt,100-self.health,dt**2)
         target_health=self.max_health*((style-min_style)/(max_style-min_style))
         self.health=lerp(self.health,target_health,0.01/(1+(self.hard/100)) if (target_health>self.health) else dt)
     def draw(self,screen,x,y):
@@ -600,8 +600,8 @@ class PlayerManager:
         h=100
         ratio=(self.health-self.min_health)/(self.max_health-self.min_health)
         HP_y=(y+h)-(h*ratio)
-        pygame.draw.rect(screen,(30,30,30),(x,y,w,(self.hard-self.min_health)/(self.max_health-self.min_health)))
-        pygame.draw.rect(screen,(100,100,100),(x,y,w,h*ratio))
+        pygame.draw.rect(screen,(30,30,30),(x-2.5,y-2.5,w+6,h+5.5))
+        pygame.draw.rect(screen,(100,100,100),(x,y,w,h*(self.hard-self.min_health)/(self.max_health-self.min_health)))
         pygame.draw.rect(screen,(255,0,0),(x,HP_y,w,h*ratio))
         
 class Meter:
