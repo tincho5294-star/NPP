@@ -1113,7 +1113,7 @@ class CircSystems:    # ah shi here we go again
         self.inlet_valve=1
         self.outlet_valve=1
         self.CCW_loop_entry=[]
-        self.ion_exchange_capcity=21000
+        self.ion_exchange_capacity=21000
         self.number=number
         self.pressurizer_temp=20
         self.pressurizer_void=0
