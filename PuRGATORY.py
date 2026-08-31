@@ -1113,7 +1113,7 @@ class CircSystems:    # ah shi here we go again
         self.inlet_valve=1
         self.outlet_valve=1
         self.CCW_loop_entry=[]
-        self.ion_exchange_capcity=210000
+        self.ion_exchange_capcity=21000
         self.number=number
         self.pressurizer_temp=20
         self.pressurizer_void=0
@@ -1263,7 +1263,8 @@ class CircSystems:    # ah shi here we go again
                 if 0.3<=shit_current["progress"]<=0.4:
                     shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                 if 0.65<=shit_current["progress"]<=0.75:
-                    shit_current["boron"]-=self.ion_exchanger_capacity
+                    shit_current["boron"]=shit_current["boron"]-self.ion_exchanger_capacity*dt if shit_current["boron"]-self.ion_exchanger_capacity*dt>0 else 0
+                    self.ion_exchanger_capacity=self.ion_exchanger_capacity-shit_current["boron"]*dt if self.ion_exchanger_capacity-shit_current["boron"]*dt>0 else 0
                 shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
                 shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
                 if shit_previous is not None:
