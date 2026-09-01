@@ -1011,7 +1011,7 @@ class GridCell:
             self.iy=iy
             self.owner=gridcell
             self.area=area
-            self.max_mass=7000-(25*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
+            self.max_mass=7000-(7.83934*math.hypot(abs(grid_origin_x-self.x),abs(grid_origin_y-self.y)))
             self.max_level=self.max_mass
             self.mass=self.max_mass
             self.level=self.max_mass
@@ -1051,7 +1051,6 @@ class GridCell:
             if self.area is not None:
                 self.water_direction=normalize360(self.water_direction)
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
-                self.level=self.mass*(self.temp**0.016)
                 self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-0.5,0.5)
                 self.viscosity=10/self.temp
@@ -1073,6 +1072,7 @@ class GridCell:
                     self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
@@ -1114,7 +1114,7 @@ class CircSystems:    # ah shi here we go again
         self.outlet_valve=1
         self.CCW_loop_entry=[]
         self.idk_entry=[]
-        self.ion_exchange_capacity=21000
+        self.ion_exchanger_capacity=21000
         self.RWT_amount=700000
         self.number=number
         self.pressurizer_temp=20
@@ -1173,7 +1173,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-p["velocity"]
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-abs(p["velocity"])
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1183,13 +1183,13 @@ class CircSystems:    # ah shi here we go again
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
-                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
+                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                     p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
                     self.exit.w_cell.water_velocity=abs(self.exit.w_cell.water_velocity)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
                 if 0.1<=p["progress"]<=0.4:
-                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,p["amount"],self.SG.water_mass,p["velocity"],dt)
+                    p["temp"],self.SG.water_temp=heat_exchange(p["temp"],self.SG.water_temp,p["amount"],self.SG.water_mass,abs(p["velocity"]),dt)
                         
                 p["progress"]=clamp(p["progress"],0,1)
                 p["amount"]=max(0,p["amount"])
@@ -1216,7 +1216,7 @@ class CircSystems:    # ah shi here we go again
                         else:
                             p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                             p["amount"]+=self.outlet_valve*p["velocity"]*dt*p["amount"]
-                        p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*p["velocity"]*dt)*p["amount"],dt)
+                        p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                         p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
                     if p["progress"]<=0:
                         if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
@@ -1278,31 +1278,31 @@ class CircSystems:    # ah shi here we go again
                     if shit_later is not None:
                         shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
                         shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
-                for i,p in enumerate(self.CCW_loop_entry):
-                    p["velocity"]=pumps[2].pressure-p["pressure"]
-                    p["progress"]+=(1/15)*p["velocity"]*dt
-                    p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]   
-                    p["progress"]=clamp(p["progress"]%1,0,1)
-                    p["amount"]=max(0,p["amount"])
-                    previous=self.CCW_loop_entry[i-1] if i>0 else None
-                    current=p
-                    later = self.CCW_loop_entry[i+1] if i+1 < len(self.CCW_loop_entry) else None
-                    if previous is not None:
-                        if previous["progress"]<current["progress"]:
-                            previous["progress"]+=1
-                        elif current["progress"]<previous["progress"]:
-                            current["progress"]+=1
-                    if later is not None:
-                        if later["progress"]<current["progress"]:
-                            later["progress"]+=1
-                        elif current["progress"]<later["progress"]:
-                            current["progress"]+=1
-                    if previous is not None:
-                        previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
-                        previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
-                    if later is not None:
-                        current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
-                        current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
+            for i,p in enumerate(self.CCW_loop_entry):
+                p["velocity"]=pumps[2].pressure-p["pressure"]
+                p["progress"]+=(1/15)*p["velocity"]*dt
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]   
+                p["progress"]=clamp(p["progress"]%1,0,1)
+                p["amount"]=max(0,p["amount"])
+                previous=self.CCW_loop_entry[i-1] if i>0 else None
+                current=p
+                later = self.CCW_loop_entry[i+1] if i+1 < len(self.CCW_loop_entry) else None
+                if previous is not None:
+                    if previous["progress"]<current["progress"]:
+                        previous["progress"]+=1
+                    elif current["progress"]<previous["progress"]:
+                        current["progress"]+=1
+                if later is not None:
+                    if later["progress"]<current["progress"]:
+                        later["progress"]+=1
+                    elif current["progress"]<later["progress"]:
+                        current["progress"]+=1
+                if previous is not None:
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
+                if later is not None:
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
