@@ -47,7 +47,7 @@ def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     t=flow_rate*dt
     new_a_temp=a_temp+(b_temp-a_temp)/(a_mass+1e-6)*t
     new_b_temp=b_temp+(a_temp-b_temp)/(b_mass+1e-6)*t
-    if 1/(a_mass+1e-6)*t>=1 and 1/(b_mass+1e-6)*t>=1:
+    if 1/(a_mass+1e-6)*t>0.5 and 1/(b_mass+1e-6)*t>0.5:
         balance=clamp((new_a_temp+new_b_temp)/2,min(a_temp,b_temp),max(a_temp,b_temp))
         new_a_temp=new_b_temp=balance
     else:
