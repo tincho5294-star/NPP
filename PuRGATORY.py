@@ -50,9 +50,8 @@ def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     if 1/(a_mass+1e-6)*t>0.5 and 1/(b_mass+1e-6)*t>0.5:
         balance=(new_a_temp+new_b_temp)/2
         new_a_temp=new_b_temp=balance
-    else:
-        new_a_temp=clamp(new_a_temp,min(new_a_temp,new_b_temp),max(new_a_temp,new_b_temp))
-        new_b_temp=clamp(new_b_temp,min(new_a_temp,new_b_temp),max(new_a_temp,new_b_temp))
+    new_a_temp=clamp(new_a_temp,min(new_a_temp,new_b_temp),max(new_a_temp,new_b_temp))
+    new_b_temp=clamp(new_b_temp,min(new_a_temp,new_b_temp),max(new_a_temp,new_b_temp))
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
