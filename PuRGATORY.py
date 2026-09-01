@@ -1104,12 +1104,6 @@ class GridCell:
                 color=(R,G,B)
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
                 pygame.draw.line(screen,color,(center_x,center_y),(drawing_offset_x,drawing_offset_y))
-class Tank:
-    def __init__(self,size):
-        self.size=size
-        self.amount=size
-        self.temp=20
-        self.pressure=(self.amount/self.size)*(self.temp/20)
 
 class CircSystems:    # ah shi here we go again
     def __init__(self,entrance_cell,exit_cell,SG,number):
@@ -1119,6 +1113,7 @@ class CircSystems:    # ah shi here we go again
         self.outlet_valve=1
         self.CCW_loop_entry=[]
         self.ion_exchange_capacity=21000
+        self.BoricAcidTankCapacity=700000
         self.number=number
         self.pressurizer_temp=20
         self.pressurizer_void=0
