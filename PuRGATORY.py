@@ -1112,6 +1112,7 @@ class CircSystems:    # ah shi here we go again
         self.inlet_valve=1
         self.outlet_valve=1
         self.CCW_loop_entry=[]
+        self.idk_entry=[]
         self.ion_exchange_capacity=21000
         self.RWT_amount=700000
         self.number=number
@@ -1140,10 +1141,11 @@ class CircSystems:    # ah shi here we go again
                 CCW_prefilled={"amount":10000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"pressure":1,"void":0}
                 CVCS_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"main"}
                 boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"boration"}
+                idk_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"To CO"}
                 self.CVCS_entry.append(CVCS_prefilled_water)
                 self.CVCS_entry.append(boration_prefilled_water)
                 self.CCW_loop_entry.append(CCW_prefilled)
-        
+                self.idk_entry.append(idk_prefilled_water)
     def update(self):
         if self.entrance is not None:
             meh=[p for p in self.water_entry if p["progress"]>=1]
