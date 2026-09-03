@@ -1254,12 +1254,16 @@ class CircSystems:    # ah shi here we go again
                     if shit_current["progress"]>=1:
                         if shit_current["velocity"]<0:
                             pass
-                        elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                        if shit_current["boron"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["boron"] and shit_current["velocity"]>0:
+                            self.VCT_boron+=shit_current["boron"]
+                            shit_current["boron"]=0
+                        if shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
                             self.VCT_water+=shit_current["amount"]
                             shit_current["amount"]=0
                         else:
                             shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
                             self.VCT_water+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
+                        
                     if 0.3<=shit_current["progress"]<=0.4:
                         shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                     if 0.65<=shit_current["progress"]<=0.75:
@@ -1280,7 +1284,7 @@ class CircSystems:    # ah shi here we go again
                     if shit_current["progress"]>=1:
                         if shit_current["velocity"]<0:
                             pass
-                        elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                        if shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
                             self.VCT_water+=shit_current["amount"]
                             shit_current["amount"]=0
                         else:
