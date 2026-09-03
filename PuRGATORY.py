@@ -1122,6 +1122,7 @@ class CircSystems:    # ah shi here we go again
         self.last=None
         self.VCT_boron=0
         self.VCT_water=0
+        self.VCT_pressure=1
         self.CrossOver_entry=[]
         self.cell_pipe_direction=180 if self.number==1 else 0
         if self.number==1:
@@ -1238,7 +1239,7 @@ class CircSystems:    # ah shi here we go again
         if self.number==1:
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             RX_1=[p for p in self.CVCS_entry if 0.2<=p["progress"]<=0.3]
-            RX_2=[p for p in self.CVCS_entry if 0.8<=p["progress"]<=0.9]
+            RX_2=[p for p in self.CVCS_entry if 0.8<=p["progress"]<=0.9 and p["branch"]=="To CO"]
             LHX_1=[p for p in self.CVCS_entry if 0.5<=p["progress"]<=0.6]
             LHX_2=[p for p in self.CCW_loop_entry if 0.5<=p["progress"]<=0.6]
             for p in RX_1:
@@ -1254,15 +1255,17 @@ class CircSystems:    # ah shi here we go again
                     if shit_current["progress"]>=1:
                         if shit_current["velocity"]<0:
                             pass
-                        if shit_current["boron"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["boron"] and shit_current["velocity"]>0:
+                        if shit_current["boron"]<=shit_current["velocity"]*dt*shit_current["boron"] and shit_current["velocity"]>0:
                             self.VCT_boron+=shit_current["boron"]
                             shit_current["boron"]=0
-                        if shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                        if shit_current["amount"]<=shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
                             self.VCT_water+=shit_current["amount"]
                             shit_current["amount"]=0
                         else:
-                            shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
-                            self.VCT_water+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
+                            shit_current["amount"]-=(shit_current["velocity"]*dt)*shit_current["amount"]
+                            shit_current["boron"]-=(shit_current["velocity"]*dt*shit_current["amount"])
+                            self.VCT_water+=shit_current["velocity"]*dt*shit_current["amount"]
+                            self.VCT_boron+=shit_current["velocity"]*dt*shit_current["boron"]
                         
                     if 0.3<=shit_current["progress"]<=0.4:
                         shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
@@ -1329,6 +1332,8 @@ class CircSystems:    # ah shi here we go again
                 if later is not None:
                     current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
                     current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
+
+            
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
