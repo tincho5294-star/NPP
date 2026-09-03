@@ -1250,17 +1250,16 @@ class CircSystems:    # ah shi here we go again
             for i_shit,shit_current in enumerate(self.CVCS_entry):
                 if shit_current["branch"]=="main":
                     shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
-                    shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
-                    for e in CVCS_exits:
-                        if shit_current["progress"]>=1:
-                            if shit_current["velocity"]<0:
-                                pass
-                            elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
-                                e["amount"]+=shit_current["amount"]
-                                shit_current["amount"]=0
-                            else:
-                                shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
-                                e["amount"]+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
+                    shit_current["progress"]+=(1/6)*shit_current["velocity"]*dt
+                    if shit_current["progress"]>=1:
+                        if shit_current["velocity"]<0:
+                            pass
+                        elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                            self.VCT_water+=shit_current["amount"]
+                            shit_current["amount"]=0
+                        else:
+                            shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
+                            self.VCT_water+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
                     if 0.3<=shit_current["progress"]<=0.4:
                         shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                     if 0.65<=shit_current["progress"]<=0.75:
@@ -1277,16 +1276,16 @@ class CircSystems:    # ah shi here we go again
                         shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
                 if shit_current["branch"]=="boration":
                     shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
-                    shit_current["progress"]+=(1/15)*shit_current["velocity"]*dt
+                    shit_current["progress"]+=(1/2)*shit_current["velocity"]*dt
                     if shit_current["progress"]>=1:
                         if shit_current["velocity"]<0:
                             pass
                         elif shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
-                            e["amount"]+=shit_current["amount"]
+                            self.VCT_water+=shit_current["amount"]
                             shit_current["amount"]=0
                         else:
                             shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
-                            e["amount"]+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
+                            self.VCT_water+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
                     if 0.3<=shit_current["progress"]<=0.4:
                         shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
                     if 0.65<=shit_current["progress"]<=0.75:
