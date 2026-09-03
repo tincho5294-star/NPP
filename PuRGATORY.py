@@ -1111,6 +1111,9 @@ class CircSystems:    # ah shi here we go again
         self.outlet_valve=1
         self.CCW_loop_entry=[]
         self.idk_entry=[]
+        self.VCT_water=0
+        self.VCT_boron=0
+        self.VCT_pressure=1
         self.ion_exchanger_capacity=21000
         self.RWT_amount=700000
         self.number=number
@@ -1138,7 +1141,7 @@ class CircSystems:    # ah shi here we go again
                 CVCS_step=c*(dt*0.1)
                 CCW_prefilled={"amount":10000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"pressure":1,"void":0}
                 CVCS_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
-                boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
+                boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":(7000*dt)*0.45,"pressure":1,"void":0}
                 TOCO_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
                 self.CVCS_entry.append(CVCS_prefilled_water)
                 self.boration_entry.append(boration_prefilled_water)
@@ -1207,16 +1210,16 @@ class CircSystems:    # ah shi here we go again
                     if p["progress"]>=1:
                         if p["velocity"]<0:
                             pass
-                        elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                        elif p["amount"]<=p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                             e["amount"]+=p["amount"]
                             p["amount"]=0
                         else:
-                            p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                            p["amount"]+=self.outlet_valve*p["velocity"]*dt*p["amount"]
-                        p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
+                            p["amount"]-=(p["velocity"]*dt)*p["amount"]
+                            e["amount"]+=p["velocity"]*dt*p["amount"]
+                        p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(abs(p["velocity"])*dt)*p["amount"],dt)
                         p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
                     if p["progress"]<=0:
-                        if p["amount"]<=(self.outlet_valve*p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
+                        if p["amount"]<=(p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
                             e["amount"]+=p["amount"]
                             p["amount"]=0
                         else:
@@ -1238,9 +1241,9 @@ class CircSystems:    # ah shi here we go again
         if self.number==1:
             self.CVCS_entry = [p for p in self.CVCS_entry if p["amount"] > 0]
             RX_1=[p for p in self.CVCS_entry if 0.2<=p["progress"]<=0.3]
-            RX_2=[p for p in self.CVCS_entry if 0.8<=p["progress"]<=0.9 and p["branch"]=="To CO"]
+            RX_2=[p for p in self.TOCO_entry if 0.8<=p["progress"]<=0.9]
             LHX_1=[p for p in self.CVCS_entry if 0.5<=p["progress"]<=0.6]
-            LHX_2=[p for p in self.CCW_loop_entry if 0.5<=p["progress"]<=0.6]
+            LHX_2=[p for p in self.CCW_loop_entry if 0.45<=p["progress"]<=0.55]
             for p in RX_1:
                 for p2 in RX_2:
                     p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],p["amount"],p2["amount"],abs(p["velocity"]-p2["velocity"]),dt)
@@ -1248,66 +1251,75 @@ class CircSystems:    # ah shi here we go again
                 for p2 in LHX_2:
                     p["temp"],p2["temp"]=heat_exchange(p["temp"],p2["temp"],p["amount"],p2["amount"],abs(p["velocity"]-p2["velocity"]),dt)
             for i_shit,shit_current in enumerate(self.CVCS_entry):
-                if shit_current["branch"]=="main":
-                    shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
-                    shit_current["progress"]+=(1/6)*shit_current["velocity"]*dt
-                    if shit_current["progress"]>=1:
-                        if shit_current["velocity"]<0:
-                            pass
-                        if shit_current["boron"]<=shit_current["velocity"]*dt*shit_current["boron"] and shit_current["velocity"]>0:
-                            self.VCT_boron+=shit_current["boron"]
-                            shit_current["boron"]=0
-                        if shit_current["amount"]<=shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
-                            self.VCT_water+=shit_current["amount"]
-                            shit_current["amount"]=0
-                        else:
-                            shit_current["amount"]-=(shit_current["velocity"]*dt)*shit_current["amount"]
-                            shit_current["boron"]-=(shit_current["velocity"]*dt*shit_current["amount"])
-                            self.VCT_water+=shit_current["velocity"]*dt*shit_current["amount"]
-                            self.VCT_boron+=shit_current["velocity"]*dt*shit_current["boron"]
+                shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
+                shit_current["progress"]+=(1/6)*shit_current["velocity"]*dt
+                if shit_current["progress"]>=1:
+                    if shit_current["velocity"]<0:
+                        pass
+                    if shit_current["boron"]<=shit_current["velocity"]*dt*shit_current["boron"] and shit_current["velocity"]>0:
+                        self.VCT_boron+=shit_current["boron"]
+                        shit_current["boron"]=0
+                    if shit_current["amount"]<=shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
+                        self.VCT_water+=shit_current["amount"]
+                        shit_current["amount"]=0
+                    else:
+                        shit_current["amount"]-=(shit_current["velocity"]*dt)*shit_current["amount"]
+                        shit_current["boron"]-=(shit_current["velocity"]*dt*shit_current["amount"])
+                        self.VCT_water+=shit_current["velocity"]*dt*shit_current["amount"]
+                        self.VCT_boron+=shit_current["velocity"]*dt*shit_current["boron"]
                         
-                    if 0.3<=shit_current["progress"]<=0.4:
-                        shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
-                    if 0.65<=shit_current["progress"]<=0.75:
-                        shit_current["boron"]=shit_current["boron"]-self.ion_exchanger_capacity*dt if shit_current["boron"]-self.ion_exchanger_capacity*dt>0 else 0
-                        self.ion_exchanger_capacity=self.ion_exchanger_capacity-shit_current["boron"]*dt if self.ion_exchanger_capacity-shit_current["boron"]*dt>0 else 0
-                    shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
-                    shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
-                    if shit_previous is not None:
-                        #shit_yourself()
-                        shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
-                        shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
-                    if shit_later is not None:
-                        shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
-                        shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
-                if shit_current["branch"]=="boration":
-                    shit_current["velocity"]=shit_current["pressure"]-self.exit.w_cell.pressure+flow
-                    shit_current["progress"]+=(1/2)*shit_current["velocity"]*dt
-                    if shit_current["progress"]>=1:
-                        if shit_current["velocity"]<0:
-                            pass
-                        if shit_current["amount"]<=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"] and shit_current["velocity"]>0:
-                            self.VCT_water+=shit_current["amount"]
-                            shit_current["amount"]=0
-                        else:
-                            shit_current["amount"]-=(self.outlet_valve*shit_current["velocity"]*dt)*shit_current["amount"]
-                            self.VCT_water+=self.outlet_valve*shit_current["velocity"]*dt*shit_current["amount"]
-                    if 0.3<=shit_current["progress"]<=0.4:
-                        shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
-                    if 0.65<=shit_current["progress"]<=0.75:
-                        shit_current["boron"]=shit_current["boron"]-self.ion_exchanger_capacity*dt if shit_current["boron"]-self.ion_exchanger_capacity*dt>0 else 0
-                        self.ion_exchanger_capacity=self.ion_exchanger_capacity-shit_current["boron"]*dt if self.ion_exchanger_capacity-shit_current["boron"]*dt>0 else 0
-                    shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
-                    shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
-                    if shit_previous is not None:
-                        #shit_yourself()
-                        shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
-                        shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
-                    if shit_later is not None:
-                        shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
-                        shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
-                if shit_current["branch"]=="To CO":
+                if 0.3<=shit_current["progress"]<=0.4:
+                    shit_current["velocity"]=shit_current["velocity"]/(abs(shit_current["progress"]-0.35)+0.1)
+                if 0.65<=shit_current["progress"]<=0.75:
+                    shit_current["boron"]=shit_current["boron"]-self.ion_exchanger_capacity*dt if shit_current["boron"]-self.ion_exchanger_capacity*dt>0 else 0
+                    self.ion_exchanger_capacity=self.ion_exchanger_capacity-shit_current["boron"]*dt if self.ion_exchanger_capacity-shit_current["boron"]*dt>0 else 0
+                shit_previous=self.CVCS_entry[i_shit-1] if i_shit>0 else None
+                shit_later=self.CVCS_entry[i_shit+1] if i_shit+1 < len(self.CVCS_entry) else None
+                if shit_previous is not None:
+                    #shit_yourself()
+                    shit_previous["velocity"],shit_current["velocity"]=heat_exchange(shit_previous["velocity"],shit_current["velocity"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"]))),0),dt)
+                    shit_previous["temp"],shit_current["temp"]=heat_exchange(shit_previous["temp"],shit_current["temp"],shit_previous["amount"],shit_current["amount"],0.05+max(0.3*(60*(dt-abs((shit_current["progress"]-dt)-shit_previous["progress"])))+(0.65*abs(shit_previous["velocity"]-shit_current["velocity"])),0),dt)
+                if shit_later is not None:
+                    shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
+                    shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+            for i,p in enumerate(self.boration_entry):
+                p["velocity"]=(p["pressure"]-self.VCT_pressure)+(pumps[2].pressure-self.VCT_pressure)
+                p["progress"]+=(1/15)*p["velocity"]*dt
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]                
+                if p["progress"]>=1:
+                    if p["velocity"]<0:
+                        pass
+                    elif p["boron"]<=p["velocity"]*dt*p["boron"] and p["velocity"]>0:
+                        self.VCT_boron+=p["boron"]
+                        p["boron"]=0
+                    elif p["amount"]<=p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                        self.VCT_water+=p["amount"]
+                        p["amount"]=0
+                    else:
+                        p["amount"]-=(p["velocity"]*dt)*p["amount"]
+                        self.VCT_water+=p["velocity"]*dt*p["amount"]
+                    p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(abs(p["velocity"])*dt)*p["amount"],dt)
+                    p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
+                if p["progress"]<=0:
+                    if p["amount"]<=(p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
+                        e["amount"]+=p["amount"]
+                        p["amount"]=0
+                    else:
+                        p["amount"]-=p["velocity"]*dt*p["amount"]
+                        e["amount"]+=p["velocity"]*dt*p["amount"]
                     
+                        
+                p["progress"]=clamp(p["progress"],0,1)
+                p["amount"]=max(0,p["amount"])
+                previous=self.CrossOver_entry[i-1] if i>0 else None
+                current=p
+                later = self.CrossOver_entry[i+1] if i+1 < len(self.CrossOver_entry) else None
+                if previous is not None:
+                    previous["velocity"],current["velocity"]=heat_exchange(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    previous["temp"],current["temp"]=heat_exchange(previous["temp"],current["temp"],previous["amount"],current["amount"],0.05+max(0.3*(60*(dt-abs((current["progress"]-dt)-previous["progress"])))+(0.65*abs(previous["velocity"]-current["velocity"])),0),dt)
+                if later is not None:
+                    current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
+                    current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
             for i,p in enumerate(self.CCW_loop_entry):
                 p["velocity"]=pumps[2].pressure-p["pressure"]
                 p["progress"]+=(1/15)*p["velocity"]*dt
@@ -1445,7 +1457,8 @@ knobs=[
     ]
 knobs_2=[
     Knob(420, 300, "Charging Pump",2,light_2,170, value=0, radius=40, _type=2),
-    Knob(420, 400, "CCW Pump",2,light_2,160, value=0,radius=40,_type=2)
+    Knob(420, 400, "CCW Pump",2,light_2,160, value=0,radius=40,_type=2),
+    Knob(420,500,"BAMP",2,light_2,150,value=0,radius=40,_type=2)
 ]
 CR_throttle = Throttle(550, 370, "Control Rod", vmin=0, vmax=100, w=40, h=200)
 buttons = [
@@ -1463,7 +1476,8 @@ buttons = [
 pumps=[
     Pump("RCP",knobs[4]),
     Pump("CP",knobs_2[0]),
-    Pump("CCWP",knobs_2[1])
+    Pump("CCWP",knobs_2[1]),
+    Pump("BAMP",knobs_2[2])
 ]
 plant_terminal=Computer(635,260,155,210,"Plant Console")
 running = True
