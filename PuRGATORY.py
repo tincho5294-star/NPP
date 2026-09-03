@@ -1117,12 +1117,11 @@ class CircSystems:    # ah shi here we go again
         self.pressurizer_temp=20
         self.pressurizer_void=0
         self.pressurizer_pressure=1
+        self.TOCO_entry=[]
+        self.boration_entry=[]
         self.SG=SG
         self.start=None
         self.last=None
-        self.VCT_boron=0
-        self.VCT_water=0
-        self.VCT_pressure=1
         self.CrossOver_entry=[]
         self.cell_pipe_direction=180 if self.number==1 else 0
         if self.number==1:
@@ -1138,13 +1137,13 @@ class CircSystems:    # ah shi here we go again
             for c in range(626):
                 CVCS_step=c*(dt*0.1)
                 CCW_prefilled={"amount":10000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"pressure":1,"void":0}
-                CVCS_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"main"}
-                boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"boration"}
-                idk_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0,"branch":"To CO"}
+                CVCS_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
+                boration_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
+                TOCO_prefilled_water={"amount":7000*dt,"velocity":0,"progress":CVCS_step,"temp":20,"boron":0,"pressure":1,"void":0}
                 self.CVCS_entry.append(CVCS_prefilled_water)
-                self.CVCS_entry.append(boration_prefilled_water)
+                self.boration_entry.append(boration_prefilled_water)
                 self.CCW_loop_entry.append(CCW_prefilled)
-                self.idk_entry.append(idk_prefilled_water)
+                self.TOCO_entry.append(TOCO_prefilled_water)
     def update(self):
         if self.entrance is not None:
             meh=[p for p in self.water_entry if p["progress"]>=1]
@@ -1307,6 +1306,8 @@ class CircSystems:    # ah shi here we go again
                     if shit_later is not None:
                         shit_current["velocity"],shit_later["velocity"]=heat_exchange(shit_current["velocity"],shit_later["velocity"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"]))),0),dt)
                         shit_current["temp"],shit_later["temp"]=heat_exchange(shit_current["temp"],shit_later["temp"],shit_current["amount"],shit_later["amount"],0.05+max(0.3*(60*(dt-abs((shit_later["progress"]-dt)-shit_current["progress"])))+(0.65*abs(shit_current["velocity"]-shit_later["velocity"])),0),dt)
+                if shit_current["branch"]=="To CO":
+                    
             for i,p in enumerate(self.CCW_loop_entry):
                 p["velocity"]=pumps[2].pressure-p["pressure"]
                 p["progress"]+=(1/15)*p["velocity"]*dt
@@ -1332,7 +1333,6 @@ class CircSystems:    # ah shi here we go again
                 if later is not None:
                     current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
                     current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
-
             
 class Pump:
     def __init__(self,name,parent_knob):
