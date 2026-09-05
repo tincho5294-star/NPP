@@ -984,7 +984,7 @@ class GridCell:
         xenon_poison=1+(self.xenon*0.4)
         self.next_neutrons=lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt)
         self.next_neutrons=clamp(self.next_neutrons,0,1e30)
-        self.next_temp=self.temp+((reaction/(1+(self.w_cell.mass/7000)*0.05))*dt)
+        self.next_temp=self.temp+(reaction*dt)
         for n in self.neighbors:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
