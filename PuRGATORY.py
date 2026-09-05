@@ -1173,7 +1173,7 @@ class CircSystems:    # ah shi here we go again
             entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(normalize360(self.entrance.w_cell.water_direction)-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if self.entrance.w_cell.mass-entrance_receiving>=0 else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if self.exit.w_cell.mass-exit_receiving>=0 else 0
-            self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
+self.RWT_amount-=RWT_receiving         self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
             self.water_entry.append({"amount":exit_receiving,"velocity":0,"progress":1,"temp":self.exit.w_cell.temp,"pressure":self.exit.w_cell.pressure,"void":0})
             self.CrossOver_entry.append({"amount":450,"velocity":(self.exit.w_cell.pressure-self.SG.pressure),"progress":0,"temp":self.SG.water_temp,"pressure":self.SG.pressure,"void":0})
             self.boration_entry.append({"amount":RWT_receiving,"velocity":0,"progress":0,"temp":self.RWT_temp,"boron":RWT_receiving_boron,"pressure":self.RWT_pressure,"void":0})
@@ -1309,7 +1309,7 @@ class CircSystems:    # ah shi here we go again
                     else:
                         p["amount"]-=(p["velocity"]*dt)*p["amount"]
                         self.VCT_water+=p["velocity"]*dt*p["amount"]
-                    p["temp"],self.VCT_temp=heat_exchange(p["temp"],self.VCT_temp,(abs(p["velocity"])*dt)*p["amount"],dt)
+                    p["temp"],self.VCT_temp=heat_exchange(p["temp"],self.VCT_temp,p["amount"],self.VCT_water,(abs(p["velocity"])*dt)*p["amount"],dt)
                     p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
                 if p["progress"]<=0:
                     if p["velocity"]>0:
