@@ -1114,8 +1114,12 @@ class CircSystems:    # ah shi here we go again
         self.VCT_water=0
         self.VCT_boron=0
         self.VCT_pressure=1
+        self.VCT_temp=20
         self.ion_exchanger_capacity=21000
         self.RWT_amount=700000
+        self.RWT_boron=700000*0.45
+        self.RWT_pressure=1
+        self.RWT_temp=20
         self.number=number
         self.pressurizer_temp=20
         self.pressurizer_void=0
@@ -1125,6 +1129,7 @@ class CircSystems:    # ah shi here we go again
         self.SG=SG
         self.start=None
         self.last=None
+        self.yo=None
         self.CrossOver_entry=[]
         self.cell_pipe_direction=180 if self.number==1 else 0
         if self.number==1:
@@ -1151,6 +1156,7 @@ class CircSystems:    # ah shi here we go again
         if self.entrance is not None:
             meh=[p for p in self.water_entry if p["progress"]>=1]
             wut=[p for p in self.water_entry if p["progress"]<=0]
+            pluh=[p for p in self.boration_entry if p["progress"]<=0]
             flow=pumps[0].pressure-self.exit.w_cell.pressure
             CO_exits=[p for p in self.water_entry if 6.984<=p["progress"]<=7.016]
             CVCS_exits=[p for p in self.CrossOver_entry if 0.968<=p["progress"]<=1]
@@ -1159,6 +1165,10 @@ class CircSystems:    # ah shi here we go again
                 self.last=l
             for s in wut:
                 self.start=s
+            for yo in pluh:
+                self.yo=yo
+            RWT_receiving=max((self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt if self.RWT_amount-(self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt>0 else self.RWT_amount,0)
+            RWT_receiving_boron=max((self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt if self.RWT_boron-(self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt>0 else self.RWT_boron,0)
             exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*(1-abs(normalize360(self.exit.w_cell.water_direction)-self.cell_pipe_direction)/180)) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*(1-abs(self.exit.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
             entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*(1-abs(normalize360(self.entrance.w_cell.water_direction)-self.cell_pipe_direction)/180)) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*(1-abs(self.entrance.w_cell.water_direction-self.cell_pipe_direction)/180))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if self.entrance.w_cell.mass-entrance_receiving>=0 else 0
@@ -1166,6 +1176,7 @@ class CircSystems:    # ah shi here we go again
             self.water_entry.append({"amount":entrance_receiving,"velocity":0,"progress":0,"temp":self.entrance.w_cell.temp,"pressure":self.entrance.w_cell.pressure,"void":0})
             self.water_entry.append({"amount":exit_receiving,"velocity":0,"progress":1,"temp":self.exit.w_cell.temp,"pressure":self.exit.w_cell.pressure,"void":0})
             self.CrossOver_entry.append({"amount":450,"velocity":(self.exit.w_cell.pressure-self.SG.pressure),"progress":0,"temp":self.SG.water_temp,"pressure":self.SG.pressure,"void":0})
+            self.boration_entry.append({"amount":RWT_receiving,"velocity":0,"progress":0,"temp":self.RWT_temp,"boron":RWT_receiving_boron,"pressure":self.RWT_pressure,"void":0})
             self.water_entry = [p for p in self.water_entry if p["amount"] > 0]
             if self.number==1:
                 self.CVCS_entry=[p for p in self.CVCS_entry if p["amount"]>0]
@@ -1285,28 +1296,30 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.boration_entry):
                 p["velocity"]=(p["pressure"]-self.VCT_pressure)+(pumps[2].pressure-self.VCT_pressure)
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]                
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]            
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
-                    elif p["boron"]<=p["velocity"]*dt*p["boron"] and p["velocity"]>0:
+                    if p["boron"]<=p["velocity"]*dt*p["boron"] and p["velocity"]>0:
                         self.VCT_boron+=p["boron"]
                         p["boron"]=0
-                    elif p["amount"]<=p["velocity"]*dt*p["amount"] and p["velocity"]>0:
+                    if p["amount"]<=p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                         self.VCT_water+=p["amount"]
                         p["amount"]=0
                     else:
                         p["amount"]-=(p["velocity"]*dt)*p["amount"]
                         self.VCT_water+=p["velocity"]*dt*p["amount"]
-                    p["temp"],e["temp"]=heat_exchange(p["temp"],e["temp"],(abs(p["velocity"])*dt)*p["amount"],dt)
+                    p["temp"],self.VCT_temp=heat_exchange(p["temp"],self.VCT_temp,(abs(p["velocity"])*dt)*p["amount"],dt)
                     p["velocity"],e["velocity"]=heat_exchange(p["velocity"],e["velocity"],1,1,dt)
                 if p["progress"]<=0:
+                    if p["velocity"]>0:
+                        pass
                     if p["amount"]<=(p["velocity"]*dt)*p["amount"] and p["velocity"]<0:
-                        e["amount"]+=p["amount"]
+                        self.RWT_amount+=p["amount"]
                         p["amount"]=0
                     else:
                         p["amount"]-=p["velocity"]*dt*p["amount"]
-                        e["amount"]+=p["velocity"]*dt*p["amount"]
+                        self.RWT_amount+=p["velocity"]*dt*p["amount"]
                     
                         
                 p["progress"]=clamp(p["progress"],0,1)
