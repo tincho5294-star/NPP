@@ -1111,10 +1111,11 @@ class CircSystems:    # ah shi here we go again
         self.outlet_valve=1
         self.CCW_loop_entry=[]
         self.idk_entry=[]
-        self.VCT_water=0
+        self.VCT_water=5000
         self.VCT_boron=0
         self.VCT_pressure=1
         self.VCT_temp=20
+        self.VCT_air=5000
         self.ion_exchanger_capacity=21000
         self.RWT_amount=700000
         self.RWT_boron=700000*0.45
