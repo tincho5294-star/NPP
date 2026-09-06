@@ -1057,7 +1057,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.water_direction=self.water_direction+(self.last_water_direction-self.water_direction+oscillation)*self.turbulence_intensity
+                self.water_direction=self.water_direction+(clamp(self.water_direction-self.last_water_direction,-self.water_velocity,self.water_velocity)+oscillation)*self.turbulence_intensity
                 for n in self.neighbors:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
@@ -1075,7 +1075,7 @@ class GridCell:
                 if not self.boiling:
                     self.void_temp=self.temp
                 self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-self.water_velocity
-                #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
+                self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
                 if self.void+(evaporation-condensation)<0:
