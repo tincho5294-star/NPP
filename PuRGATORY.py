@@ -1023,6 +1023,8 @@ class GridCell:
             self.void=0
             self.void_temp=self.temp
             self.boiling_point=100
+            self.contribution_sum=0
+            self.next_direction=self.water_direction
             self.pressure=1
             self.boron=0
             self.boron_conc=0
@@ -1046,10 +1048,9 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.water_direction=normalize360(self.water_direction)
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.density=safe_div(self.mass,self.level)
-                oscillation=random.uniform(-0.5,0.5)
+                oscillation=random.uniform(-1,1)
                 self.viscosity=10/self.temp
                 D=0.01
                 reynolds=(((abs(self.water_velocity))*D)/self.viscosity)*10000
@@ -1057,18 +1058,23 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.water_direction=self.water_direction+(clamp(self.water_direction-self.last_water_direction,-self.water_velocity,self.water_velocity)+oscillation)*self.turbulence_intensity
+                self.next_direction=self.water_direction+oscillation*self.turbulence_intensity
                 for n in self.neighbors:
+                    n_contribution=self.pressure-n.pressure
+                    self.contribution_sum+=n_contribution
+                for n in self.neighbors:
+                    n_contribution=self.pressure-n.pressure
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
                     n.water_velocity=abs(n.water_velocity)
-                    if self.water_direction<n.water_direction:
-                        self.water_direction=self.water_direction+360
-                    elif n.water_direction<self.water_direction:
-                        n.water_direction=n.water_direction+360
-                    self.water_direction,n.water_direction=heat_exchange(self.water_direction,n.water_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    if self.next_direction<n.next_direction:
+                        self.next_direction=self.next_direction+360
+                    elif n.next_direction<self.next_direction:
+                        n.next_direction=n.next_direction+360
+                    self.next_direction,n.next_direction=heat_exchange(self.next_direction,n.next_direction,self.mass,n.mass,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,0.5+math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
+                    self.next_direction=lerp(self.next_direction+360 if n.next_direction>self.next_direction else self.next_direction,n.next_direction+360 if self.next_direction>n.next_direction else n.next_direction,safe_div(n_contribution,self.contribution_sum)*dt)
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
@@ -1085,9 +1091,12 @@ class GridCell:
                     self.void=max(self.void+(evaporation-condensation),0)
                     self.mass=max(self.mass-(evaporation-condensation),0)
                 self.boron_conc=safe_div(self.boron,self.mass)
+                self.next_direction=normalize360(self.next_direction)
+                self.water_direction=self.next_direction
+                self.contribution_sum=0
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
-                self.water_direction=normalize360(self.water_direction)
+                self.water_velocity*=0.99
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
