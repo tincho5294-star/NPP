@@ -1077,7 +1077,7 @@ class GridCell:
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-self.water_velocity*2
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-self.water_velocity**2
                 self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1096,10 +1096,10 @@ class GridCell:
                 self.water_velocity*=0.99
         def draw(self,screen):
             if self.owner.Area is not None:
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity)
-                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity,0,7.5)
-                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity,0,7.5)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/20)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/20)
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/20,0,7.5)
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/20,0,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
