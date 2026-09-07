@@ -1076,7 +1076,7 @@ class GridCell:
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     dx=n.x-self.x
                     dy=self.y-n.y
-                    FromSelfToNAngle=normalize360(math.atan2(dy,dx))
+                    FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     self.next_direction=lerp(self.next_direction+360 if n.next_direction>self.next_direction else self.next_direction,FromSelfToNAngle if self.next_direction>FromSelfToNAngle else FromSelfToNAngle,safe_div(n_contribution,self.contribution_sum)*dt)
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
