@@ -1071,7 +1071,7 @@ class GridCell:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                    self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if self.next_direction-FromSelfToNAngle>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),0,1))
+                    self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if abs(self.next_direction-FromSelfToNAngle)>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),0,1))
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
