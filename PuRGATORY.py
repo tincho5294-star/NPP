@@ -1069,8 +1069,8 @@ class GridCell:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
                     n.water_velocity=abs(n.water_velocity)
-                    self.mass=self.mass+(n.mass-self.mass)*((((FromSelfToNAngle+360 if abs(FromSelfToNAngle-self.water_direction)>180 else FromSelfToNAngle)-(self.water_direction+360 if abs(FromSelfToNAngle-self.water_direction)>180 else self.water_direction))/360)*dt)
-                    n.mass=n.mass+(self.mass-n.mass)*((((FromSelfToNAngle+360 if abs(FromSelfToNAngle-self.water_direction)>180 else FromSelfToNAngle)-(self.water_direction+360 if abs(FromSelfToNAngle-self.water_direction)>180 else self.water_direction))/360)*dt)
+                    self.mass=self.mass+(n.mass-self.mass)*clamp(abs(((FromSelfToNAngle-self.water_direction+540)%360-180)/180),0,1)*dt
+                    n.mass=n.mass+(self.mass-n.mass)*clamp(abs(((FromSelfToNAngle-self.water_direction+540)%360-180)/180),0,1)*dt
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if abs(self.next_direction-FromSelfToNAngle)>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),0,1))
                 self.level=self.mass*(self.temp**0.016)
