@@ -1072,7 +1072,7 @@ class GridCell:
                     self.mass=self.mass+(n.mass-self.mass)*clamp(abs(((FromSelfToNAngle-self.water_direction+540)%360-180)/180),0,1)*dt
                     n.mass=n.mass+(self.mass-n.mass)*clamp(abs(((FromSelfToNAngle-self.water_direction+540)%360-180)/180),0,1)*dt
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if abs(self.next_direction-FromSelfToNAngle)>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),0,1))
+                    self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if abs(self.next_direction-FromSelfToNAngle)>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),0,1)*dt)
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
