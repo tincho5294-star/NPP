@@ -1069,15 +1069,15 @@ class GridCell:
                     self.water_velocity,n.water_velocity=heat_exchange(self.water_velocity,n.water_velocity,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                     self.water_velocity=abs(self.water_velocity)
                     n.water_velocity=abs(n.water_velocity)
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,clamp(abs(((FromSelfToNAngle-self.water_direction+540)%360-180)/180),0,1),dt)
+                    self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,clamp(abs(max(FromSelfToNAngle,self.water_direction)-(min(self.water_direction,FromSelfToNAngle)+360))/360 if abs(FromSelfToNAngle-self.water_direction)>180 else abs(FromSelfToNAngle-self.water_direction)/360,0,1),dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                    self.next_direction=lerp(self.next_direction,FromSelfToNAngle+360 if abs(self.next_direction-FromSelfToNAngle)>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),-1,1)*dt)
+                    self.next_direction=lerp(self.next_direction+360 if FromSelfToNAngle-self.next_direction>180 else self.next_direction,FromSelfToNAngle+360 if self.next_direction-FromSelfToNAngle>180 else FromSelfToNAngle,clamp(safe_div(n_contribution,abs(self.contribution_sum)),-1,1)*dt)
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-self.water_velocity**2
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.water_velocity)**2
                 self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1200,7 +1200,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-abs(p["velocity"])**2
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)#-abs(p["velocity"])**2
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1232,7 +1232,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CrossOver_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-abs(p["velocity"]*0.5)**2
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)#-abs(p["velocity"]*0.5)**2
                 for e in CO_exits:                
                     if p["progress"]>=1:
                         if p["velocity"]<0:
@@ -1312,7 +1312,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.boration_entry):
                 p["velocity"]=(p["pressure"]-self.VCT_pressure)+(pumps[2].pressure-self.VCT_pressure)
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-abs(p["velocity"]*0.5)**2            
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)#-abs(p["velocity"]*0.5)**2            
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1351,7 +1351,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CCW_loop_entry):
                 p["velocity"]=pumps[2].pressure-p["pressure"]
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-(abs(p["velocity"])*0.5)**2 
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)#-(abs(p["velocity"])*0.5)**2 
                 p["progress"]=clamp(p["progress"]%1,0,1)
                 p["amount"]=max(0,p["amount"])
                 previous=self.CCW_loop_entry[i-1] if i>0 else None
