@@ -1034,7 +1034,8 @@ class GridCell:
             if self.area is None:
                 return
             directions = [
-                (0, 1), (0, -1), (1, 0), (-1, 0)
+                (0, 1), (0, -1), (1, 0), (-1, 0),
+                (1,1), (1,-1), (-1,1), (-1,-1)
             ]
                 
             for dx, dy in directions:
@@ -1047,8 +1048,8 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.water_velocity=clamp(self.water_velocity,0,500)
-                self.next_velocity=clamp(self.next_velocity,0,500)
+                self.water_velocity=self.water_velocity
+                self.next_velocity=self.next_velocity
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-1,1)
@@ -1063,6 +1064,10 @@ class GridCell:
                 left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy]
                 up=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy-1]
                 down=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy+1]
+                top_left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy-1]
+                top_right=[n for n in self.neighbors if n.ix==self.ix+1 and n.iy==self.iy-1]
+                bottom_left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy+1]
+                bottom_right=[n for n in self.neighbors if n.ix==self.ix+1 and n.iy==self.iy+1]
                 self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(self.density*self.water_velocity)
                 for n in self.neighbors:
                     dx=n.x-self.x
@@ -1108,6 +1113,43 @@ class GridCell:
                     up_u=u
                     up_v=v
                     up_pressure=self.pressure
+                if top_left:
+                    top_left_theta=math.radians(top_left[0].water_direction)
+                    top_left_u=top_left[0].water_velocity*math.cos(top_left_theta)
+                    top_left_v=top_left[0].water_velocity*math.sin(top_left_theta)
+                    top_left_pressure=top_left[0].pressure
+                else:
+                    top_left_u=u
+                    top_left_v=v
+                    top_left_pressure=self.pressure
+                if top_right:
+                    top_right_theta=math.radians(top_right[0].water_direction)
+                    top_right_u=top_right[0].water_velocity*math.cos(top_right_theta)
+                    top_right_v=top_right[0].water_velocity*math.sin(top_right_theta)
+                    top_right_pressure=top_right[0].pressure
+                else:
+                    top_right_u=u
+                    top_right_v=v
+                    top_right_pressure=self.pressure
+                if bottom_left:
+                    bottom_left_theta=math.radians(bottom_left[0].water_direction)
+                    bottom_left_u=bottom_left[0].water_velocity*math.cos(bottom_left_theta)
+                    bottom_left_v=bottom_left[0].water_velocity*math.sin(bottom_left_theta)
+                    bottom_left_pressure=bottom_left[0].pressure
+                else:
+                    bottom_left_u=u
+                    bottom_left_v=v
+                    bottom_left_pressure=self.pressure
+                if bottom_right:
+                    bottom_right_theta=math.radians(bottom_right[0].water_direction)
+                    bottom_right_u=bottom_right[0].water_velocity*math.cos(bottom_right_theta)
+                    bottom_right_v=bottom_right[0].water_velocity*math.sin(bottom_right_theta)
+                    bottom_right_pressure=bottom_right[0].pressure
+                else:
+                    bottom_right_u=u
+                    bottom_right_v=v
+                    bottom_right_pressure=self.pressure
+                
                 du_dx=(right_u-left_u)/30
                 du_dy=(down_u-up_u)/30
                 dv_dx=(right_v-left_v)/30
