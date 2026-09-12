@@ -1047,8 +1047,6 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.water_velocity=clamp(self.water_velocity,0,500)
-                self.next_velocity=clamp(self.next_velocity,0,500)
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-1,1)
@@ -1143,6 +1141,7 @@ class GridCell:
                 self.next_direction=normalize360(self.next_direction)
                 self.water_direction=self.next_direction
                 self.water_velocity=self.next_velocity
+                print(self.water_velocity)
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
                 self.water_velocity*=0.99
