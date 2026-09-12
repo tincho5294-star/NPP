@@ -1029,12 +1029,22 @@ class GridCell:
             self.boron=0
             self.boron_conc=0
             self.density=safe_div(self.mass,self.level)
+            self.prev_mass=self.mass
+            self.prev_level=self.level
+            self.prev_temp=self.temp
+            self.prev_void=self.void
+            self.prev_pressure=self.pressure
+            self.prev_density=self.density
+            self.prev_water_velocity=self.water_velocity
+            self.prev_water_direction=self.water_direction
+            self.prev_boron=self.boron
             self.history=[self.water_direction]
         def get_neighbor(self):
             if self.area is None:
                 return
             directions = [
-                (0, 1), (0, -1), (1, 0), (-1, 0)
+                (0, 1), (0, -1), (1, 0), (-1, 0),
+                (1,1), (1,-1), (-1,1), (-1,-1)
             ]
                 
             for dx, dy in directions:
@@ -1052,77 +1062,76 @@ class GridCell:
                 oscillation=random.uniform(-1,1)
                 self.viscosity=10/self.temp
                 D=0.01
-                reynolds=(((abs(self.water_velocity))*D)/self.viscosity)*10000
+                reynolds=(((abs(self.prev_water_velocity))*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                right=[n for n in self.neighbors if n.ix==self.ix+1 and n.iy==self.iy]
-                left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy]
-                up=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy-1]
-                down=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy+1]
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(self.density*self.water_velocity)
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(math.log1p(abs(self.water_velocity))**2))
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     self.next_velocity,n.next_velocity=heat_exchange(self.next_velocity,n.next_velocity,1,1,clamp(abs(max(FromSelfToNAngle,self.water_direction)-(min(self.water_direction,FromSelfToNAngle)+360))/360 if abs(FromSelfToNAngle-self.water_direction)>180 else abs(FromSelfToNAngle-self.water_direction)/360,0,1),dt)
-                theta=math.radians(self.water_direction)
-                u=self.water_velocity*math.cos(theta)
-                v=self.water_velocity*math.sin(theta)
+                theta=math.radians(self.prev_water_direction)
+                u=self.prev_water_velocity*math.cos(theta)
+                v=self.prev_water_velocity*math.sin(theta)
+                right=[n for n in self.neighbors if n.ix==self.ix+1 and n.iy==self.iy]
+                left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy]
+                up=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy-1]
+                down=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy+1]
                 if right:
-                    right_theta=math.radians(right[0].water_direction)
-                    right_u=right[0].water_velocity*math.cos(right_theta)
-                    right_v=right[0].water_velocity*math.sin(right_theta)
-                    right_pressure=right[0].pressure
+                    right_theta=math.radians(right[0].prev_water_direction)
+                    right_u=right[0].prev_water_velocity*math.cos(right_theta)
+                    right_v=right[0].prev_water_velocity*math.sin(right_theta)
+                    right_pressure=right[0].prev_pressure
                 else:
                     right_u=u
                     right_v=v
-                    right_pressure=self.pressure
+                    right_pressure=self.prev_pressure
                 if left:
-                    left_theta=math.radians(left[0].water_direction)
-                    left_u=left[0].water_velocity*math.cos(left_theta)
-                    left_v=left[0].water_velocity*math.sin(left_theta)
-                    left_pressure=left[0].pressure
+                    left_theta=math.radians(left[0].prev_water_direction)
+                    left_u=left[0].prev_water_velocity*math.cos(left_theta)
+                    left_v=left[0].prev_water_velocity*math.sin(left_theta)
+                    left_pressure=left[0].prev_pressure
                 else:
                     left_u=u
                     left_v=v
-                    left_pressure=self.pressure
+                    left_pressure=self.prev_pressure
                 if down:
-                    down_theta=math.radians(down[0].water_direction)
-                    down_u=down[0].water_velocity*math.cos(down_theta)
-                    down_v=down[0].water_velocity*math.sin(down_theta)
-                    down_pressure=down[0].pressure
+                    down_theta=math.radians(down[0].prev_water_direction)
+                    down_u=down[0].prev_water_velocity*math.cos(down_theta)
+                    down_v=down[0].prev_water_velocity*math.sin(down_theta)
+                    down_pressure=down[0].prev_pressure
                 else:
                     down_u=u
                     down_v=v
-                    down_pressure=self.pressure
+                    down_pressure=self.prev_pressure
                 if up:
-                    up_theta=math.radians(up[0].water_direction)
-                    up_u=up[0].water_velocity*math.cos(up_theta)
-                    up_v=up[0].water_velocity*math.sin(up_theta)
-                    up_pressure=up[0].pressure
+                    up_theta=math.radians(up[0].prev_water_direction)
+                    up_u=up[0].prev_water_velocity*math.cos(up_theta)
+                    up_v=up[0].prev_water_velocity*math.sin(up_theta)
+                    up_pressure=up[0].prev_pressure
                 else:
                     up_u=u
                     up_v=v
-                    up_pressure=self.pressure
-                du_dx=(right_u-left_u)/30
-                du_dy=(down_u-up_u)/30
-                dv_dx=(right_v-left_v)/30
-                dv_dy=(down_v-up_v)/30
+                    up_pressure=self.prev_pressure
                 dp_dx=(right_pressure-left_pressure)/30
                 dp_dy=(down_pressure-up_pressure)/30
-                apx=-(dp_dx/self.density)
-                apy=-(dp_dy/self.density)
-                au=-(u*du_dx+v*du_dy)
-                av=-(u*dv_dx+v*dv_dy)
-                u+=(au+apx)*dt
-                v+=(av+apy)*dt
+                viscosity_force=self.viscosity*0.02
+                lap_u=(right_u+left_u+up_u+down_u-(4*u))
+                lap_v=(right_v+left_v+up_v+down_v-(4*v))
+                density=max(self.density,1e-6)
+                apx=-(dp_dx/density)
+                apy=-(dp_dy/density)
+                u=((u+(apx+(lap_u*viscosity_force))*dt)/(1+(self.prev_water_velocity*0.02*dt)))
+                v=((v+(apy+(lap_v*viscosity_force))*dt)/(1+(self.prev_water_velocity*0.02*dt)))
                 self.next_velocity=math.hypot(u,v)
                 self.next_direction=math.degrees(math.atan2(v,u))
                 self.water_velocity=abs(self.water_velocity)
                 for n in self.neighbors:
                     n.water_velocity=abs(n.water_velocity)
+                    self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.level=self.mass*(self.temp**0.016)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
@@ -1146,14 +1155,22 @@ class GridCell:
                 self.history=self.history[-2:]
                 self.water_velocity*=0.99
                 for n in self.neighbors:
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,clamp(abs(max(FromSelfToNAngle,self.water_direction)-(min(self.water_direction,FromSelfToNAngle)+360))/360 if abs(FromSelfToNAngle-self.water_direction)>180 else abs(FromSelfToNAngle-self.water_direction)/360,0,1),dt)
-                    self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,clamp(abs(max(FromSelfToNAngle,self.water_direction)-(min(self.water_direction,FromSelfToNAngle)+360))/360 if abs(FromSelfToNAngle-self.water_direction)>180 else abs(self.water_direction-FromSelfToNAngle)/360,0,1),dt)
+                    dx=n.x-self.x
+                    dy=self.y-n.y
+                    FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
+                    direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
+                    flow_fraction=(self.prev_water_velocity*direction_alignment*dt)/30
+                    flow_fraction=flow_fraction/(1+flow_fraction)
+                    n.mass+=self.mass*flow_fraction
+                    self.mass-=self.mass*flow_fraction
+                    n.boron+=self.boron*flow_fraction
+                    self.boron-=self.boron*flow_fraction
         def draw(self,screen):
             if self.owner.Area is not None:
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/20)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/20)
-                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/20,0,7.5)
-                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/20,0,7.5)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/10,0,7.5)
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/10,0,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
@@ -1286,7 +1303,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CrossOver_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-abs(p["velocity"])
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]
                 for e in CO_exits:                
                     if p["progress"]>=1:
                         if p["velocity"]<0:
@@ -1366,7 +1383,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.boration_entry):
                 p["velocity"]=(p["pressure"]-self.VCT_pressure)+(pumps[2].pressure-self.VCT_pressure)
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-abs(p["velocity"])       
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]            
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1405,7 +1422,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CCW_loop_entry):
                 p["velocity"]=pumps[2].pressure-p["pressure"]
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-(abs(p["velocity"]))
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]   
                 p["progress"]=clamp(p["progress"]%1,0,1)
                 p["amount"]=max(0,p["amount"])
                 previous=self.CCW_loop_entry[i-1] if i>0 else None
@@ -1589,6 +1606,18 @@ while running:
     current_control_panel=clamp(current_control_panel,1,4)
     comparison_control_panel=current_control_panel
     all_cell_temp.clear()
+    for row in water_grid:
+        for w_cell in row:
+            if w_cell.area is not None:
+                w_cell.prev_mass=w_cell.mass
+                w_cell.prev_level=w_cell.level
+                w_cell.prev_temp=w_cell.temp
+                w_cell.prev_void=w_cell.void
+                w_cell.prev_pressure=w_cell.pressure
+                w_cell.prev_density=w_cell.density
+                w_cell.prev_water_velocity=w_cell.water_velocity
+                w_cell.prev_water_direction=w_cell.water_direction
+                w_cell.prev_boron=w_cell.boron
     for row in grid:
         for cell in row:
             cell.update()
