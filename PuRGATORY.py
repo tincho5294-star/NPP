@@ -1067,7 +1067,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(math.log1p(abs(self.water_velocity))**2))
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(475*math.log1p(abs(self.water_velocity))**2))
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
@@ -1150,7 +1150,6 @@ class GridCell:
                 self.next_direction=normalize360(self.next_direction)
                 self.water_direction=self.next_direction
                 self.water_velocity=self.next_velocity
-                print(self.water_velocity)
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
                 self.water_velocity*=0.99
@@ -1271,7 +1270,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.water_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-abs(p["velocity"])
+                p["pressure"]=(self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20))/700000)-(0.5*(475*math.log1p(abs(p["velocity"]))**2))
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1303,7 +1302,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CrossOver_entry):
                 p["velocity"]=p["pressure"]-self.exit.w_cell.pressure+flow
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-(0.5*(475*math.log1p(abs(p["velocity"]))**2))
                 for e in CO_exits:                
                     if p["progress"]>=1:
                         if p["velocity"]<0:
@@ -1383,7 +1382,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.boration_entry):
                 p["velocity"]=(p["pressure"]-self.VCT_pressure)+(pumps[2].pressure-self.VCT_pressure)
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]            
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-(0.5*(475*math.log1p(abs(p["velocity"]))**2))           
                 if p["progress"]>=1:
                     if p["velocity"]<0:
                         pass
@@ -1422,7 +1421,7 @@ class CircSystems:    # ah shi here we go again
             for i,p in enumerate(self.CCW_loop_entry):
                 p["velocity"]=pumps[2].pressure-p["pressure"]
                 p["progress"]+=(1/15)*p["velocity"]*dt
-                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-p["velocity"]   
+                p["pressure"]=((self.pressurizer_temp*(p["amount"]+p["void"]*1600*(p["temp"]/20)))/700000)-(0.5*(475*math.log1p(abs(p["velocity"]))**2))
                 p["progress"]=clamp(p["progress"]%1,0,1)
                 p["amount"]=max(0,p["amount"])
                 previous=self.CCW_loop_entry[i-1] if i>0 else None
