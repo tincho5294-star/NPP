@@ -977,7 +977,7 @@ class GridCell:
             return
         for n in self.neighbors:
             self.next_neutrons,n.next_neutrons=heat_exchange(self.next_neutrons,n.next_neutrons,1,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
-        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed*((1.05-((self.w_cell.level/7000)*0.1))*(1.85-self.w_cell.density)),dt)
+        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
@@ -1060,7 +1060,7 @@ class GridCell:
                 self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.density=safe_div(self.mass,self.level)
                 oscillation=random.uniform(-1,1)
-                self.viscosity=10/self.temp
+                self.viscosity=0.0005
                 D=0.01
                 reynolds=(((abs(self.prev_water_velocity))*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
@@ -1152,7 +1152,6 @@ class GridCell:
                 self.water_velocity=self.next_velocity
                 self.history.append(self.water_direction)
                 self.history=self.history[-2:]
-                self.water_velocity*=0.99
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
