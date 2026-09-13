@@ -989,7 +989,6 @@ class GridCell:
             self.next_temp,n.next_temp=heat_exchange(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
         self.uranium_mass*=burn_rate**(reaction*dt)
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
-        self.next_temp=max(20,self.next_temp)
         self.neutron=self.next_neutrons
         self.temp=self.next_temp
         xenon_production=reaction*0.015*dt
@@ -997,6 +996,8 @@ class GridCell:
         xenon_decay=self.xenon*0.0025*dt
         self.xenon+=xenon_production-xenon_burnoff-xenon_decay
         self.xenon=max(0,self.xenon)
+        helium_production=reaction*0.005*dt
+        self.w_cell.void+=helium_production
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
@@ -1018,7 +1019,6 @@ class GridCell:
             self.offset_y=(self.y+7.5)-math.sin(math.radians(self.water_direction))*(7.5*self.water_velocity)
             self.turbulence_intensity=0
             self.viscosity=10/self.temp
-            self.last_water_direction=self.water_direction
             self.max_hypot=math.hypot(7.5,30)
             self.void=0
             self.void_temp=self.temp
@@ -1038,7 +1038,6 @@ class GridCell:
             self.prev_water_velocity=self.water_velocity
             self.prev_water_direction=self.water_direction
             self.prev_boron=self.boron
-            self.history=[self.water_direction]
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1057,11 +1056,12 @@ class GridCell:
                         self.neighbors.append(neighbor)
         def update(self):
             if self.area is not None:
-                self.last_water_direction=self.history[-2] if len(self.history)>=2 else self.history[0]
                 self.density=safe_div(self.mass,self.level)
-                oscillation=random.uniform(-1,1)
-                self.viscosity=0.0005
-                D=0.01
+                A=1.5e-4  
+                B=200.0   
+                C=-140.0  
+                self.viscosity=A*10**(B/(self.temp - C))
+                D=2.2
                 reynolds=(((abs(self.prev_water_velocity))*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
@@ -1150,8 +1150,6 @@ class GridCell:
                 self.next_direction=normalize360(self.next_direction)
                 self.water_direction=self.next_direction
                 self.water_velocity=self.next_velocity
-                self.history.append(self.water_direction)
-                self.history=self.history[-2:]
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
