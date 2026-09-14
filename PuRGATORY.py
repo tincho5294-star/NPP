@@ -1067,7 +1067,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(475*math.log1p(abs(self.water_velocity))**2))
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*((20*math.log1p(abs(self.water_velocity)))**2))
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
@@ -1162,14 +1162,17 @@ class GridCell:
                     n.boron+=self.boron*flow
                     self.boron-=self.boron*flow
         def draw(self,screen):
+            velocity_list=[]
             if self.owner.Area is not None:
-                for row in grid:
-                    for cell in row:
-                        
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
-                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/10,0,7.5)
-                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/10,0,7.5)
+                for wcell in water_row:
+                    velocity_list.append(wcell.water_velocity)
+                max_velocity=max(velocity_list)
+                if max_velocity<5:
+                    max_velocity=5
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,7.5)
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,7.5)
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
