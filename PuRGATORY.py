@@ -1155,12 +1155,12 @@ class GridCell:
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
-                    flow_fraction=(self.prev_water_velocity*direction_alignment*dt)/30
-                    flow_fraction=flow_fraction/(1+flow_fraction)
-                    n.mass+=self.mass*flow_fraction
-                    self.mass-=self.mass*flow_fraction
-                    n.boron+=self.boron*flow_fraction
-                    self.boron-=self.boron*flow_fraction
+                    flow=(self.prev_water_velocity*direction_alignment*dt)/30
+                    flow=flow/(1+flow)
+                    n.mass+=self.mass*flow
+                    self.mass-=self.mass*flow
+                    n.boron+=self.boron*flow
+                    self.boron-=self.boron*flow
         def draw(self,screen):
             if self.owner.Area is not None:
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
