@@ -1163,6 +1163,9 @@ class GridCell:
                     self.boron-=self.boron*flow
         def draw(self,screen):
             if self.owner.Area is not None:
+                for row in grid:
+                    for cell in row:
+                        
                 self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
                 self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/10)
                 drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/10,0,7.5)
