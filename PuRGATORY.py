@@ -1127,8 +1127,8 @@ class GridCell:
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=(-(u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)
-                dv_dt=(-(u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)
+                du_dt=-(u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u
+                dv_dt=-(u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
