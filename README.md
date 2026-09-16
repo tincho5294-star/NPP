@@ -1,4 +1,6 @@
 # PuRGATORY
+SAFETY IS DEAD. (안전은 죽었다.)
+PURGATORY IS SEAMLESS. (연옥은 끝이 보이지 않는다.)
 미완성
 파이게임
 가압경수로 기반의 하드코어 통제 게임
