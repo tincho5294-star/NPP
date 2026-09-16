@@ -1072,7 +1072,6 @@ class GridCell:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                    self.next_velocity,n.next_velocity=heat_exchange(self.next_velocity,n.next_velocity,1,1,clamp(abs(max(FromSelfToNAngle,self.water_direction)-(min(self.water_direction,FromSelfToNAngle)+360))/360 if abs(FromSelfToNAngle-self.water_direction)>180 else abs(FromSelfToNAngle-self.water_direction)/360,0,1),dt)
                 theta=math.radians(self.prev_water_direction)
                 u=self.prev_water_velocity*math.cos(theta)
                 v=self.prev_water_velocity*math.sin(theta)
@@ -1127,8 +1126,8 @@ class GridCell:
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=-(((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)/((abs((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)+1e-6)**0.5))
-                dv_dt=-(((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)/((abs((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)+1e-6)**0.5))
+                du_dt=-(((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)/((abs((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)+1e-6)**0.99))
+                dv_dt=-(((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)/((abs((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)+1e-6)**0.99))
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
@@ -1166,7 +1165,32 @@ class GridCell:
                     self.mass-=self.mass*flow
                     n.boron+=self.boron*flow
                     self.boron-=self.boron*flow
-                print(u,v)
+                if not math.isfinite(self.temp):
+                    raise ValueError(f"NaN: temp {self.temp} , mass {self.mass} , level {self.level} , void {self.void} , pressure {self.pressure} , water_velocity {self.water_velocity} , water_direction {self.water_direction} , boron {self.boron}")
+
+                if not math.isfinite(self.viscosity):
+                    raise ValueError(f"NaN: viscosity {self.viscosity}")
+
+                if not math.isfinite(self.pressure):
+                    raise ValueError(f"NaN: pressure {self.pressure}")
+
+                if not math.isfinite(dp_dx):
+                    raise ValueError(f"NaN: dp_dx {dp_dx}")
+
+                if not math.isfinite(dp_dy):
+                    raise ValueError(f"NaN: dp_dy {dp_dy}")
+
+                if not math.isfinite(du_dt):
+                    raise ValueError(f"NaN: du_dt {du_dt}")
+
+                if not math.isfinite(dv_dt):
+                    raise ValueError(f"NaN: dv_dt {dv_dt}")
+
+                if not math.isfinite(u):
+                    raise ValueError(f"NaN: u {u}")
+
+                if not math.isfinite(v):
+                    raise ValueError(f"NaN: v {v}")
         def draw(self,screen):
             velocity_list=[]
             if self.owner.Area is not None:
@@ -1184,7 +1208,7 @@ class GridCell:
                 R=clamp(lerp(0,255,self.water_velocity),0,255)
                 G=0
                 B=0
-                color=(R,G,B)
+                color=(R,G,B) 
                 pygame.draw.circle(screen,(100,100,100),(center_x,center_y),7.5,1)
                 pygame.draw.line(screen,color,(center_x,center_y),(drawing_offset_x,drawing_offset_y))
 
