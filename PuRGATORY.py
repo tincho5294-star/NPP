@@ -1127,8 +1127,8 @@ class GridCell:
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=-((u*du_dx+v*du_dy)/((abs(u*du_dx+v*du_dy)**0.99)+1e-6))-apx+(self.viscosity/density)*lap_u
-                dv_dt=-((u*dv_dx+v*dv_dy)/((abs(u*dv_dx+v*dv_dy)**0.99)+1e-6))-apy+(self.viscosity/density)*lap_v
+                du_dt=-(((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)/((abs((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)+1e-6)**0.5))
+                dv_dt=-(((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)/((abs((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)+1e-6)**0.5))
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
@@ -1166,6 +1166,7 @@ class GridCell:
                     self.mass-=self.mass*flow
                     n.boron+=self.boron*flow
                     self.boron-=self.boron*flow
+                print(u,v)
         def draw(self,screen):
             velocity_list=[]
             if self.owner.Area is not None:
