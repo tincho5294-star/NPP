@@ -45,14 +45,11 @@ def clamp(v,a,b):
     return max(a,min(b,v))
 def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
     t=flow_rate*dt
-    if a_mass>0 and b_mass>0:
-        new_a_temp=a_temp+(b_temp-a_temp)/a_mass*t
-        new_b_temp=b_temp+(a_temp-b_temp)/b_mass*t
-        if (1/a_mass*t)+(1/b_mass*t)>1:
-            balance=clamp((new_a_temp+new_b_temp)/2,min(a_temp,b_temp),max(a_temp,b_temp))
-            new_a_temp=new_b_temp=balance
-    else:
-        new_a_temp,new_b_temp=a_temp,b_temp
+    new_a_temp=a_temp+(b_temp-a_temp)/(a_mass+1e-6)*t
+    new_b_temp=b_temp+(a_temp-b_temp)/(b_mass+1e-6)*t
+    if (1/(a_mass+1e-6)*t)+(1/(b_mass+1e-6)*t)>1:
+        balance=clamp((new_a_temp+new_b_temp)/2,min(a_temp,b_temp),max(a_temp,b_temp))
+        new_a_temp=new_b_temp=balance
     return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
@@ -1068,7 +1065,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*((20*math.log1p(abs(self.water_velocity)))**2))
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*((math.log1p(abs(self.water_velocity)))**2))
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
@@ -1116,19 +1113,19 @@ class GridCell:
                     up_u=u
                     up_v=v
                     up_pressure=self.prev_pressure
-                dp_dx=(right_pressure-left_pressure)/30
-                dp_dy=(down_pressure-up_pressure)/30
-                du_dx=(right_u-left_u)/30
-                du_dy=(down_u-up_u)/30
-                dv_dx=(right_v-left_v)/30
-                dv_dy=(down_v-up_v)/30
+                dp_dx=(right_pressure-left_pressure)/(30 if right and left else 15)
+                dp_dy=(down_pressure-up_pressure)/(30 if down and up else 15)
+                du_dx=(right_u-left_u)/(30 if right and left else 15)
+                du_dy=(down_u-up_u)/(30 if down and up else 15)
+                dv_dx=(right_v-left_v)/(30 if right and left else 15)
+                dv_dy=(down_v-up_v)/(30 if down and up else 15)
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
                 lap_v=(right_v+left_v+up_v+down_v-(4*v))
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=-(((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)/((abs((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)+1e-6)**0.99))
-                dv_dt=-(((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)/((abs((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)+1e-6)**0.99))
+                du_dt=-((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)
+                dv_dt=-((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
@@ -1286,8 +1283,8 @@ class CircSystems:    # ah shi here we go again
             if self.number==1:
                 RWT_receiving=max((self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt if self.RWT_amount-(self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt>0 else self.RWT_amount,0)
                 RWT_receiving_boron=max((self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt if self.RWT_boron-(self.VCT_pressure-self.yo["pressure"]+(pumps[2].pressure-self.VCT_pressure))*100*dt>0 else self.RWT_boron,0)
-            exit_receiving=max(((clamp((self.exit.w_cell.level-3500)/100,0,1)*100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180)))) if ((clamp((self.exit.w_cell.level-3500)/100,0,1)*100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180))))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
-            entrance_receiving=max(((clamp((self.entrance.w_cell.level-3650)/100,0,1)*100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180)))) if ((clamp((self.entrance.w_cell.level-3650)/100,0,1)*100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180))))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
+            exit_receiving=max(((100*self.outlet_valve*dt)*((self.exit.w_cell.pressure-self.last["pressure"]-flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180)))) if (450*self.outlet_valve*dt)*(self.exit.w_cell.water_velocity*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180))))<=self.exit.w_cell.mass else self.exit.w_cell.mass),0)
+            entrance_receiving=max(((100*self.inlet_valve*dt)*((self.entrance.w_cell.pressure-self.start["pressure"]+flow)*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.entrance.w_cell.prev_water_direction+540)%360)-180)))) if (450*self.inlet_valve*dt)*(self.entrance.w_cell.water_velocity*max(0,math.cos(math.radians(((self.cell_pipe_direction-self.exit.w_cell.prev_water_direction+540)%360)-180))))<=self.entrance.w_cell.mass else self.entrance.w_cell.mass),0)
             self.entrance.w_cell.mass=self.entrance.w_cell.mass-entrance_receiving if self.entrance.w_cell.mass-entrance_receiving>=0 else 0
             self.exit.w_cell.mass=self.exit.w_cell.mass-exit_receiving if self.exit.w_cell.mass-exit_receiving>=0 else 0
             if self.number==1:
@@ -1488,8 +1485,6 @@ class CircSystems:    # ah shi here we go again
                 if later is not None:
                     current["velocity"],later["velocity"]=heat_exchange(current["velocity"],later["velocity"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"]))),0),dt)
                     current["temp"],later["temp"]=heat_exchange(current["temp"],later["temp"],current["amount"],later["amount"],0.05+max(0.3*(60*(dt-abs((later["progress"]-dt)-current["progress"])))+(0.65*abs(current["velocity"]-later["velocity"])),0),dt)
-            for p in self.water_entry:
-                print(p)
 class Pump:
     def __init__(self,name,parent_knob):
         self.pressure=0
