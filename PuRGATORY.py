@@ -1065,7 +1065,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*((math.log1p(abs(self.water_velocity)))**2))
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(50*math.tanh(self.water_velocity/50))**2)
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
@@ -1115,17 +1115,13 @@ class GridCell:
                     up_pressure=self.prev_pressure
                 dp_dx=(right_pressure-left_pressure)/(30 if right and left else 15)
                 dp_dy=(down_pressure-up_pressure)/(30 if down and up else 15)
-                du_dx=(right_u-left_u)/(30 if right and left else 15)
-                du_dy=(down_u-up_u)/(30 if down and up else 15)
-                dv_dx=(right_v-left_v)/(30 if right and left else 15)
-                dv_dy=(down_v-up_v)/(30 if down and up else 15)
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
                 lap_v=(right_v+left_v+up_v+down_v-(4*v))
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=-((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)
-                dv_dt=-((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v)
+                du_dt=-(-apx+(self.viscosity/density)*lap_u)
+                dv_dt=-(-apy+(self.viscosity/density)*lap_v) #FUCK PHYSICS, I NEED IT TO WORK . ADVECTION TERM AINT THAT NEEDED!!!!
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
@@ -1163,6 +1159,7 @@ class GridCell:
                     self.mass-=self.mass*flow
                     n.boron+=self.boron*flow
                     self.boron-=self.boron*flow
+                '''
                 if not math.isfinite(self.temp):
                     raise ValueError(f"NaN: temp {self.temp} , mass {self.mass} , level {self.level} , void {self.void} , pressure {self.pressure} , water_velocity {self.water_velocity} , water_direction {self.water_direction} , boron {self.boron}")
 
@@ -1189,6 +1186,8 @@ class GridCell:
 
                 if not math.isfinite(v):
                     raise ValueError(f"NaN: v {v}")
+                '''
+                print(self.water_velocity)
         def draw(self,screen):
             velocity_list=[]
             if self.owner.Area is not None:
