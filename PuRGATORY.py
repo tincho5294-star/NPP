@@ -17,7 +17,6 @@ import pygame
 import time
 import sys
 import math
-import random
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
@@ -1070,6 +1069,7 @@ class GridCell:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
+                self.prev_water_velocity=80000*math.tanh(self.prev_water_velocity/80000)
                 theta=math.radians(self.prev_water_direction)
                 u=self.prev_water_velocity*math.cos(theta)
                 v=self.prev_water_velocity*math.sin(theta)
@@ -1113,12 +1113,12 @@ class GridCell:
                     up_u=u
                     up_v=v
                     up_pressure=self.prev_pressure
-                du_dx=(right_u-left_u)/(30 if right and left else 15)
-                du_dy=(down_u-up_u)/(30 if down and up else 15)
-                dv_dx=(right_v-left_v)/(30 if down and up else 15)
-                dv_dy=(down_v-up_v)/(30 if down and up else 15)
-                dp_dx=(right_pressure-left_pressure)/(30 if right and left else 15)
-                dp_dy=(down_pressure-up_pressure)/(30 if down and up else 15)
+                du_dx=(u-(left_u if math.copysign(1,u)==1 else right_u))/15
+                du_dy=(u-(up_u if math.copysign(1,v)==-1 else down_u))/15
+                dv_dx=(v-(left_v if math.copysign(1,u)==1 else right_v))/15
+                dv_dy=(v-(up_v if math.copysign(1,v)==-1 else down_v))/15
+                dp_dx=(self.pressure-(left_pressure if math.copysign(1,u)==1 else right_pressure))/15
+                dp_dy=(self.pressure-(up_pressure if math.copysign(1,v)==-1 else down_pressure))/15
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
                 lap_v=(right_v+left_v+up_v+down_v-(4*v))
                 density=max(self.density,1e-6)
@@ -1189,7 +1189,6 @@ class GridCell:
                 if not math.isfinite(v):
                     raise ValueError(f"NaN: v {v}")
                 '''
-                print(self.water_velocity)
         def draw(self,screen):
             velocity_list=[]
             if self.owner.Area is not None:
