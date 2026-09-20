@@ -1064,12 +1064,12 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(20*math.tanh(self.water_velocity))**2)
+                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(100*math.tanh(self.water_velocity/100))**2)
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                self.prev_water_velocity=80000*math.tanh(self.prev_water_velocity/80000)
+                self.prev_water_velocity=clamp(self.prev_water_velocity,0,100)
                 theta=math.radians(self.prev_water_direction)
                 u=self.prev_water_velocity*math.cos(theta)
                 v=self.prev_water_velocity*math.sin(theta)
@@ -1117,7 +1117,7 @@ class GridCell:
                 du_dy=(u-(up_u if math.copysign(1,v)==-1 else down_u))/15
                 dv_dx=(v-(left_v if math.copysign(1,u)==1 else right_v))/15
                 dv_dy=(v-(up_v if math.copysign(1,v)==-1 else down_v))/15
-                dp_dx=(self.pressure-(left_pressure if math.copysign(1,u)==1 else right_pressure))/15
+                dp_dx=(self.pressure-(left_pressure if math.copysign(1,u)==-1 else right_pressure))/15
                 dp_dy=(self.pressure-(up_pressure if math.copysign(1,v)==-1 else down_pressure))/15
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
                 lap_v=(right_v+left_v+up_v+down_v-(4*v))
@@ -1197,10 +1197,10 @@ class GridCell:
                 max_velocity=max(velocity_list)
                 if max_velocity<5:
                     max_velocity=5
-                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))
-                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))
-                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,7.5)
-                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,7.5)
+                self.offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))*7.5
+                self.offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*(self.water_velocity/(max_velocity+1e-6))*7.5
+                drawing_offset_x=(self.x+7.5)+math.cos(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,1)*7.5
+                drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,1)*7.5
                 center_x=self.x+7.5
                 center_y=self.y+7.5
                 R=clamp(lerp(0,255,self.water_velocity/max_velocity),0,255)
