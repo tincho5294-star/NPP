@@ -1064,12 +1064,12 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
+                Pvoid=(self.void*461.5*self.void_temp)/(self.void*(self.void_temp**0.016))
                 self.pressure=((self.mass+self.void*1600*self.temp)-(0.5*self.density*self.water_velocity**2))/101325
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                self.prev_water_velocity=clamp(self.prev_water_velocity,0,100)
                 theta=math.radians(self.prev_water_direction)
                 u=self.prev_water_velocity*math.cos(theta)
                 v=self.prev_water_velocity*math.sin(theta)
@@ -1119,17 +1119,17 @@ class GridCell:
                 dv_dy=(up_v-down_v)/(30 if up and down else 15)
                 dp_dx=(right_pressure-left_pressure)/(30 if right and left else 15)
                 dp_dy=(up_pressure-down_pressure)/(30 if up and down else 15)
-                lap_u=(right_u+left_u+up_u+down_u-(4*u))
-                lap_v=(right_v+left_v+up_v+down_v-(4*v))
+                lap_u=(right_u+left_u+up_u+down_u-(4*u))/(15**2)
+                lap_v=(right_v+left_v+up_v+down_v-(4*v))/(15**2)
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
-                du_dt=-((u*du_dx+v*du_dy)-apx+(self.viscosity/density)*lap_u)
-                dv_dt=-((u*dv_dx+v*dv_dy)-apy+(self.viscosity/density)*lap_v) 
+                du_dt=-((u*du_dx+v*du_dy)-apx-(self.viscosity/density)*lap_u)
+                dv_dt=-((u*dv_dx+v*dv_dy)-apy-(self.viscosity/density)*lap_v) 
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
-                self.next_direction=math.degrees(math.atan2(-v,u))
+                self.next_direction=math.degrees(math.atan2(v,u))
                 self.water_velocity=abs(self.water_velocity)
                 for n in self.neighbors:
                     n.water_velocity=abs(n.water_velocity)
@@ -1157,7 +1157,7 @@ class GridCell:
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
-                    flow=(self.prev_water_velocity*direction_alignment*dt)/30
+                    flow=(self.prev_water_velocity*direction_alignment)/30
                     flow=flow/(1+flow)
                     self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,flow,dt)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,flow,dt)
@@ -1203,7 +1203,7 @@ class GridCell:
                 drawing_offset_y=(self.y+7.5)-math.sin(math.radians(normalize360(self.water_direction)))*clamp(self.water_velocity/(max_velocity+1e-6),0,1)*7.5
                 center_x=self.x+7.5
                 center_y=self.y+7.5
-                R=clamp(lerp(0,255,self.water_velocity/max_velocity),0,255)
+                R=clamp(lerp(0,255,self.water_velocity/(max_velocity+1e-6)),0,255)
                 G=0
                 B=0
                 color=(R,G,B) 
@@ -1308,11 +1308,16 @@ class CircSystems:    # ah shi here we go again
                     elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                         self.exit.w_cell.mass+=p["amount"]
                         p["amount"]=0
+                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
+                        p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
-                    p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
-                    p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
+                        if p["velocity"]==0:
+                            pass
+                        else:
+                            p["velocity"],self.exit.w_cell.water_velocity=heat_exchange(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
+                            p["temp"],self.exit.w_cell.temp=heat_exchange(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                     self.exit.w_cell.next_velocity=abs(self.exit.w_cell.next_velocity)
                 if p["progress"]<=0:
                     if p["velocity"]>0:
