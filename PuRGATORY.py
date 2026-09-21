@@ -1064,7 +1064,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                self.pressure=((((self.mass+self.void*1600)*self.temp)/700000)/20)-(0.5*self.density*(100*math.tanh(self.water_velocity/100))**2)
+                self.pressure=((self.mass+self.void*1600*self.temp)-(0.5*self.density*self.water_velocity**2))/101325
                 for n in self.neighbors:
                     dx=n.x-self.x
                     dy=self.y-n.y
