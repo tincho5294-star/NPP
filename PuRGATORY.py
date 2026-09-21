@@ -1117,8 +1117,8 @@ class GridCell:
                 du_dy=(up_u-down_u)/30
                 dv_dx=(right_v-left_v)/30
                 dv_dy=(up_v-down_v)/30
-                dp_dx=(self.pressure-(left_pressure if math.copysign(1,u)==-1 else right_pressure))/15
-                dp_dy=(self.pressure-(up_pressure if math.copysign(1,v)==-1 else down_pressure))/15
+                dp_dx=(right_pressure-left_pressure)/15
+                dp_dy=(up_pressure-down_pressure)/15
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
                 lap_v=(right_v+left_v+up_v+down_v-(4*v))
                 density=max(self.density,1e-6)
