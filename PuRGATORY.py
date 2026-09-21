@@ -1113,10 +1113,10 @@ class GridCell:
                     up_u=u
                     up_v=v
                     up_pressure=self.prev_pressure
-                du_dx=(u-(left_u if math.copysign(1,u)==1 else right_u))/15
-                du_dy=(u-(up_u if math.copysign(1,v)==-1 else down_u))/15
-                dv_dx=(v-(left_v if math.copysign(1,u)==1 else right_v))/15
-                dv_dy=(v-(up_v if math.copysign(1,v)==-1 else down_v))/15
+                du_dx=(right_u-left_u)/30
+                du_dy=(up_u-down_u)/30
+                dv_dx=(right_v-left_v)/30
+                dv_dy=(up_v-down_v)/30
                 dp_dx=(self.pressure-(left_pressure if math.copysign(1,u)==-1 else right_pressure))/15
                 dp_dy=(self.pressure-(up_pressure if math.copysign(1,v)==-1 else down_pressure))/15
                 lap_u=(right_u+left_u+up_u+down_u-(4*u))
