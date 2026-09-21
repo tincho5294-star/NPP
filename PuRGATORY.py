@@ -1129,7 +1129,7 @@ class GridCell:
                 u+=du_dt*dt
                 v+=dv_dt*dt
                 self.next_velocity=math.hypot(u,v)
-                self.next_direction=math.degrees(math.atan2(v,u))
+                self.next_direction=math.degrees(math.atan2(-v,u))
                 self.water_velocity=abs(self.water_velocity)
                 for n in self.neighbors:
                     n.water_velocity=abs(n.water_velocity)
