@@ -1051,9 +1051,11 @@ class GridCell:
                     neighbor=water_grid[ny][nx]
                     if neighbor.area is not None:
                         self.neighbors.append(neighbor)
+                    #get out!
         def update(self):
             if self.area is not None:
-                self.density=safe_div(self.mass,self.level)
+                g=9.81
+                self.density=self.mass/(self.level+1e-6)
                 A=1.5e-4  
                 B=200.0   
                 C=-140.0  
@@ -1065,6 +1067,7 @@ class GridCell:
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
                 Pvoid=(self.void*461.5*self.void_temp)/(self.void*(self.void_temp**0.016))
+                Pwater=self.density*g*self.level
                 self.pressure=((self.mass+self.void*1600*self.temp)-(0.5*self.density*self.water_velocity**2))/101325
                 for n in self.neighbors:
                     dx=n.x-self.x
