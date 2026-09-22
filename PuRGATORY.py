@@ -1066,7 +1066,7 @@ class GridCell:
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
                 self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
-                Pvoid=(self.void*461.5*self.void_temp)/(self.void*(self.void*(self.void_temp**0.016)))
+                Pvoid=(self.void*461.5*self.void_temp)/(self.void*(self.void*(self.void_temp**0.0049)))
                 Pwater=self.density*g*self.level
                 self.pressure=((Pvoid+Pwater)-(0.5*self.density*self.water_velocity**2))/101325
                 for n in self.neighbors:
@@ -1137,7 +1137,7 @@ class GridCell:
                 for n in self.neighbors:
                     n.water_velocity=abs(n.water_velocity)
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
-                self.level=self.mass*(self.temp**0.016)
+                self.level=self.mass*(self.temp**0.0049)
                 self.boiling=self.temp>self.boiling_point
                 self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
