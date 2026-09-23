@@ -42,14 +42,13 @@ def lerp_color(c1, c2, t):
     )
 def clamp(v,a,b):
     return max(a,min(b,v))
-def heat_exchange(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
+def heat_exchange(SelfT,temp_list,SelfMass,flow_rate,dt): #ye shimmy lets assume ts is in an iteration vro 🥀🥀🥶🥶
     t=flow_rate*dt
-    new_a_temp=a_temp+(b_temp-a_temp)/(a_mass+1e-6)*t
-    new_b_temp=b_temp+(a_temp-b_temp)/(b_mass+1e-6)*t
-    if (1/(a_mass+1e-6)*t)+(1/(b_mass+1e-6)*t)>1:
-        balance=clamp((new_a_temp+new_b_temp)/2,min(a_temp,b_temp),max(a_temp,b_temp))
-        new_a_temp=new_b_temp=balance
-    return new_a_temp,new_b_temp
+    n_diff_sum=0
+    for temp in temp_list:
+        n_diff_sum+=(temp-SelfT)
+    SelfT=clamp(SelfT+n_diff_sum*clamp(t/SelfMass,0,1),min(temp_list),max(temp_list))
+    return SelfT
 def normalize360(ang):
     return ang%360
 def mouse_angle_deg(cx,cy,mx,my):
