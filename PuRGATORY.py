@@ -47,8 +47,16 @@ def heat_exchange(SelfT,temp_list,SelfMass,flow_rate,dt): #ye shimmy lets assume
     n_diff_sum=0
     for temp in temp_list:
         n_diff_sum+=(temp-SelfT)
-    SelfT=clamp(SelfT+n_diff_sum*clamp(t/SelfMass,0,1),min(temp_list),max(temp_list))
+    SelfT=clamp(SelfT+(n_diff_sum/(len(temp_list)+1))*clamp(t/SelfMass,0,1),min(temp_list),max(temp_list))
     return SelfT
+def heat_exchange_1d(a_temp,b_temp,a_mass,b_mass,flow_rate,dt):
+    t=flow_rate*dt
+    new_a_temp=a_temp+(b_temp-a_temp)/(a_mass+1e-6)*t
+    new_b_temp=b_temp+(a_temp-b_temp)/(b_mass+1e-6)*t
+    if (1/(a_mass+1e-6)*t)+(1/(b_mass+1e-6)*t)>1:
+        balance=clamp((new_a_temp*a_mass+new_b_temp*b_mass)/(a_mass+b_mass),min(a_temp,b_temp),max(a_temp,b_temp))
+        new_a_temp=new_b_temp=balance
+    return new_a_temp,new_b_temp
 def normalize360(ang):
     return ang%360
 def mouse_angle_deg(cx,cy,mx,my):
@@ -1064,7 +1072,7 @@ class GridCell:
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.owner.temp,self.temp=heat_exchange(self.owner.temp,self.temp,3500*(self.owner.uranium_mass/3.5),self.mass,(0.1+((self.water_velocity*0.9)/100)*(self.level/7000))*self.turbulence_intensity,dt)
+                self.temp,self.owner.next_temp=heat_exchange_1d(self.temp,self.owner.next_temp,self.mass,3500*(self.owner.uranium_mass)/3.5,(self.level/7000)*(self.water_velocity/5)*self.turbulence_intensity,dt)
                 Pvoid=(self.void*461.5*self.void_temp)/(self.void*(self.void**(self.void_temp**0.0049)))
                 Pwater=self.density*g*self.level
                 self.pressure=((Pvoid+Pwater)-(0.5*self.density*self.water_velocity**2))/101325
@@ -1138,7 +1146,7 @@ class GridCell:
                     self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,math.hypot(abs(self.offset_x-n.offset_x),abs(self.offset_y-n.offset_y))/self.max_hypot,dt)
                 self.level=self.mass**(self.temp**0.0049)
                 self.boiling=self.temp>self.boiling_point
-                self.void_temp,self.temp=heat_exchange(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
+                self.void_temp,self.temp=heat_exchange_1d(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
                 if not self.boiling:
                     self.void_temp=self.temp
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
@@ -1154,15 +1162,14 @@ class GridCell:
                 self.next_direction=normalize360(self.next_direction)
                 self.water_direction=self.next_direction
                 self.water_velocity=self.next_velocity
-                for n in self.neighbors:
-                    dx=n.x-self.x
-                    dy=self.y-n.y
-                    FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                    direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
-                    flow=(self.prev_water_velocity*direction_alignment)/30
-                    flow=flow/(1+flow)
-                    self.mass,n.mass=heat_exchange(self.mass,n.mass,1,1,flow,dt)
-                    self.boron,n.boron=heat_exchange(self.boron,n.boron,1,1,flow,dt)
+                dx=n.x-self.x
+                dy=self.y-n.y
+                FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
+                direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
+                flow=(self.prev_water_velocity*direction_alignment)/30
+                flow=flow/(1+flow)
+                self.mass=heat_exchange(self.mass,[self.neighbors[0].mass,self.neighbors[1].mass,self.neighbors[2].mass,self.neighbors[3].mass],1,1,flow,dt)
+                self.boron=heat_exchange(self.boron,[self.neighbors[0].boron,self.neighbors[1].boron,self.neighbors[2].boron,self.neighbors[3].boron],1,1,flow,dt)
                 '''
                 if not math.isfinite(self.temp):
                     raise ValueError(f"NaN: temp {self.temp} , mass {self.mass} , level {self.level} , void {self.void} , pressure {self.pressure} , water_velocity {self.water_velocity} , water_direction {self.water_direction} , boron {self.boron}")
