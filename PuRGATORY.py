@@ -937,7 +937,7 @@ class GridCell:
         self.next_temp=20
         self.ix=ix
         self.iy=iy
-        self.uranium_mass=3.5
+        self.uranium_mass=5000
         self.neutron=1
         self.temp=20
         self.xenon=0
@@ -980,18 +980,20 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
+        n_neutron_list=[]
         for n in self.neighbors:
-            self.next_neutrons,n.next_neutrons=heat_exchange_1d(self.next_neutrons,n.next_neutrons,1,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
+            n_neutron_list.append(n.next_neutrons)
+        self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
-        self.next_neutrons=math.log1p(lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt))
-        self.next_neutrons=clamp(self.next_neutrons,0,1e30)
         self.next_temp=self.temp+(reaction*dt)
+        n_temp_list=[]
         for n in self.neighbors:
-            self.next_temp,n.next_temp=heat_exchange_1d(self.next_temp,n.next_temp,3500*(self.uranium_mass/3.5),3500*(n.uranium_mass/3.5),0.005,dt)
+            n_temp_list.append(n.temp)
+        self.next_temp,n.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #other heat exchanges such as radiant heats rather than the main heat exchange reason(water)
         self.uranium_mass*=burn_rate**(reaction*dt)
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
         self.neutron=self.next_neutrons
@@ -1003,6 +1005,7 @@ class GridCell:
         self.xenon=max(0,self.xenon)
         helium_production=reaction*0.005*dt
         self.w_cell.void+=helium_production
+        self.next_neutrons=clamp(lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt),0,1e30)
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
@@ -1072,7 +1075,7 @@ class GridCell:
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
-                self.temp,self.owner.next_temp=heat_exchange_1d(self.temp,self.owner.next_temp,self.mass,3500*(self.owner.uranium_mass)/3.5,(self.level/7000)*(self.water_velocity/5)*self.turbulence_intensity,dt)
+                self.temp,self.owner.next_temp=heat_exchange_1d(self.temp,self.owner.next_temp,self.mass,self.owner.uranium_mass,(self.level/7000)*(self.water_velocity/5)*self.turbulence_intensity,dt)
                 Pvoid=(self.void*461.5*(self.void_temp+273.15))/(self.void*(self.void**(self.void_temp**0.0049)))
                 Pwater=self.density*g*self.level
                 self.pressure=((Pvoid+Pwater)-(0.5*self.density*self.water_velocity**2))/101325
@@ -1169,6 +1172,10 @@ class GridCell:
                 flow=flow/(1+flow)
                 self.mass=heat_exchange(self.mass,[self.neighbors[0].mass,self.neighbors[1].mass,self.neighbors[2].mass,self.neighbors[3].mass],1,flow,dt)
                 self.boron=heat_exchange(self.boron,[self.neighbors[0].boron,self.neighbors[1].boron,self.neighbors[2].boron,self.neighbors[3].boron],1,flow,dt)
+                n_temp_list=[]
+                for n in self.neighbors:
+                    n_temp_list.append(n.temp)
+                self.temp=heat_exchange(self.temp,n_temp_list,self.mass,self.water_velocity,dt)
                 '''
                 if not math.isfinite(self.temp):
                     raise ValueError(f"NaN: temp {self.temp} , mass {self.mass} , level {self.level} , void {self.void} , pressure {self.pressure} , water_velocity {self.water_velocity} , water_direction {self.water_direction} , boron {self.boron}")
