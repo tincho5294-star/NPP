@@ -982,11 +982,13 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
-        n_neutron_list=[]
+        n_neutron_diff_list=[]
         for n in self.neighbors:
-            n_neutron_list.append(n.next_neutrons)
+            n_neutron_diff=(n.next_neutrons-self.next_neutrons)*n.neutron_speed
+            n_neutron_diff_list.append(n_neutron_diff)
         neutron_mass_constant=1.67493e-27
-        self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
+        n_diff_sum=sum(n_neutron_diff_list)
+        self.next_neutrons=self.next_neutrons+(n_diff_sum/(len(n_neutron_diff_list)+1))*dt
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         burn_rate=0.991
@@ -996,14 +998,15 @@ class GridCell:
         for n in self.neighbors:
             n_temp_list.append(n.temp)
         c=299792458
-        self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant,0)
         self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*self.uranium_mass*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
+        self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
-        E=DeltaMass*c**2
+        DeltaE=(DeltaMass/1000)*c**2
+        DeltaTemp=DeltaE/(self.uranium_mass*0.116) #first time ever i put capacity in the code
         self.next_temp,n.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #other heat exchanges such as radiant heats rather than the main heat exchange reason(water)
         self.uranium_mass*=burn_rate**(reaction*dt)
-        self.uranium_mass=clamp(self.uranium_mass,0,3.5)
         self.neutron=self.next_neutrons
+        self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         xenon_production=reaction*0.015*dt
         xenon_burnoff=self.neutron*0.01*dt
@@ -1012,7 +1015,6 @@ class GridCell:
         self.xenon=max(0,self.xenon)
         helium_production=reaction*0.005*dt
         self.w_cell.void+=helium_production
-        self.next_neutrons=clamp(lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt),0,1e30)
         self.prev_uranium_mass=self.uranium_mass
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
@@ -1175,7 +1177,7 @@ class GridCell:
                 dx=n.x-self.x
                 dy=self.y-n.y
                 FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                direction_alignment=max(0,math.cos(math.radians(((FromSelfToNAngle-self.prev_water_direction+540)%360)-180)))
+                cosine_similarity=((math.cos(math.radians(self.water_direction))*math.cos(math.radians(n.water_direction)))+(math.sin(math.radians(self.water_direction))*math.sin(math.radians(n.water_direction))))/(math.hypot(math.cos(math.radians(self.water_direction)),math.sin(math.radians(self.water_direction)))*math.hypot(math.cos(math.radians(n.water_direction)),math.sin(math.radians(n.water_direction))))
                 flow=(self.prev_water_velocity*direction_alignment)/30
                 flow=flow/(1+flow)
                 self.mass=heat_exchange(self.mass,[self.neighbors[0].mass,self.neighbors[1].mass,self.neighbors[2].mass,self.neighbors[3].mass],1,flow,dt)
