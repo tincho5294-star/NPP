@@ -950,6 +950,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=1.2
+        self.last_neutron=self.neutron
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
@@ -983,7 +984,7 @@ class GridCell:
         n_neutron_list=[]
         for n in self.neighbors:
             n_neutron_list.append(n.next_neutrons)
-        neutron_mass_constant=1.67493*10**-27
+        neutron_mass_constant=1.67493e-27
         self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
@@ -1007,6 +1008,7 @@ class GridCell:
         helium_production=reaction*0.005*dt
         self.w_cell.void+=helium_production
         self.next_neutrons=clamp(lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt),0,1e30)
+        DeltaNeutron=self.next_neutron-self.
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
