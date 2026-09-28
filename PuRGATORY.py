@@ -17,6 +17,7 @@ import pygame
 import time
 import sys
 import math
+import random
 pygame.font.init()
 pygame.mixer.init()
 dial_font=pygame.font.SysFont("arial",12)
@@ -988,7 +989,6 @@ class GridCell:
         self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
-        E=DeltaMass*c**2
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
@@ -996,8 +996,10 @@ class GridCell:
         n_temp_list=[]
         for n in self.neighbors:
             n_temp_list.append(n.temp)
-        self.uranium_mass-=self.neutron
+        self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant,0)
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*self.uranium_mass*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
+        E=DeltaMass*c**2
         self.next_temp,n.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #other heat exchanges such as radiant heats rather than the main heat exchange reason(water)
         self.uranium_mass*=burn_rate**(reaction*dt)
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
