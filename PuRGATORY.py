@@ -990,12 +990,12 @@ class GridCell:
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
         burn_rate=0.991
-        k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
         self.next_temp=self.temp+(reaction*dt)
         n_temp_list=[]
         for n in self.neighbors:
             n_temp_list.append(n.temp)
+        c=299792458
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant,0)
         self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*self.uranium_mass*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
