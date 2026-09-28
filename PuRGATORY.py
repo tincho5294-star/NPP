@@ -983,6 +983,7 @@ class GridCell:
         n_neutron_list=[]
         for n in self.neighbors:
             n_neutron_list.append(n.next_neutrons)
+        neutron_mass_constant=1.67493*10**-27
         self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
