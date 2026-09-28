@@ -938,6 +938,7 @@ class GridCell:
         self.ix=ix
         self.iy=iy
         self.uranium_mass=5000
+        self.prev_uranium_mass=5000
         self.neutron=1
         self.temp=20
         self.xenon=0
@@ -950,7 +951,6 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=1.2
-        self.last_neutron=self.neutron
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
@@ -988,6 +988,7 @@ class GridCell:
         self.next_neutrons=heat_exchange(self.next_neutrons,n_neutron_list,1,1,dt) #중성자는 열의 개념이 아니라서 그냥 1로 둔다
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         reaction=(self.neutron*self.uranium_mass)/(self.neutron_speed+1e-6)
+        E=DeltaMass*c**2
         burn_rate=0.991
         k=2-(((self.CR_depth*1.05)/100)+(self.w_cell.boron_conc*0.5))
         xenon_poison=1+(self.xenon*0.4)
@@ -995,6 +996,8 @@ class GridCell:
         n_temp_list=[]
         for n in self.neighbors:
             n_temp_list.append(n.temp)
+        self.uranium_mass-=self.neutron
+        DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         self.next_temp,n.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #other heat exchanges such as radiant heats rather than the main heat exchange reason(water)
         self.uranium_mass*=burn_rate**(reaction*dt)
         self.uranium_mass=clamp(self.uranium_mass,0,3.5)
@@ -1008,7 +1011,7 @@ class GridCell:
         helium_production=reaction*0.005*dt
         self.w_cell.void+=helium_production
         self.next_neutrons=clamp(lerp(self.next_neutrons,(self.neutron*k)/(xenon_poison*0.8),dt),0,1e30)
-        DeltaNeutron=self.next_neutron-self.
+        self.prev_uranium_mass=self.uranium_mass
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
