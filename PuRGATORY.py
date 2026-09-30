@@ -1178,22 +1178,15 @@ class GridCell:
                 dx=n.x-self.x
                 dy=self.y-n.y
                 FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                flow=(self.prev_water_velocity*direction_alignment)/30
-                flow=flow/(1+flow)
-                self.mass=heat_exchange(self.mass,[self.neighbors[0].mass,self.neighbors[1].mass,self.neighbors[2].mass,self.neighbors[3].mass],1,flow,dt)
-                self.boron=heat_exchange(self.boron,[self.neighbors[0].boron,self.neighbors[1].boron,self.neighbors[2].boron,self.neighbors[3].boron],1,flow,dt)
                 n_temp_diff_list=[]
                 for n in self.neighbors:
-                    n_temp_diff_list.append(n_temp_diff)
-                n_temp_diff_sum=sum(n_temp_diff_list)
-                for n in self.neighbors:
-                    dx=n.x-self.x
-                    dy=self.y-n.y
-                    FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     vector_FSTNA=(math.cos(math.radians(FromSelfToNAngle)),math.sin(math.radians(FromSelfToNAngle)))
                     cosine_similarity=(vector_FSTNA[0]*math.cos(math.radians(n.water_direction))+vector_FSTNA[1]*math.sin(math.radians(n.water_direction)))/(math.hypot(vector_FSTNA[0],vector_FSTNA[1])*math.hypot(math.cos(math.radians(n.water_direction)),math.sin(math.radians(n.water_direction))))
-                    n_temp_diff=(n.temp-self.temp)*(1.0-cosine_similarity)*abs(n.water_velocity-self.water_velocity)
-                self.next_temp=self.next_temp+((n_temp_diff_sum/self.mass)/(len(n_temp_diff_sum)+1))
+                    t=(1.0-cosine_similarity)*abs(n.water_velocity-self.water_velocity)
+                    n_temp_diff=(n.temp-self.temp)*t
+                    n_temp_diff_list.append(n_temp_diff)
+                n_temp_diff_sum=sum(n_temp_diff_list)
+                self.next_temp=self.next_temp+((n_temp_diff_sum/self.mass)/(len(n_temp_diff_list)+1))
                 '''
                 if not math.isfinite(self.temp):
                     raise ValueError(f"NaN: temp {self.temp} , mass {self.mass} , level {self.level} , void {self.void} , pressure {self.pressure} , water_velocity {self.water_velocity} , water_direction {self.water_direction} , boron {self.boron}")
