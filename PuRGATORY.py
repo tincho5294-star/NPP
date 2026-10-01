@@ -1185,8 +1185,8 @@ class GridCell:
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
                     vector_FSTNA=(math.cos(math.radians(FromSelfToNAngle)),math.sin(math.radians(FromSelfToNAngle)))
                     cosine_similarity=(vector_FSTNA[0]*math.cos(math.radians(n.water_direction))+vector_FSTNA[1]*math.sin(math.radians(n.water_direction)))/(math.hypot(vector_FSTNA[0],vector_FSTNA[1])*math.hypot(math.cos(math.radians(n.water_direction)),math.sin(math.radians(n.water_direction))))
-                    t=(1.0-cosine_similarity)*abs(n.water_velocity-self.water_velocity)
-                    n_temp_diff=(n.temp-self.temp)*t
+                    t=(1.0-cosine_similarity)*abs(n.water_velocity-self.water_velocity)*dt
+                    n_temp_diff=(n.temp-self.temp)*t if t<=1 else (n.temp-self.temp)
                     n_temp_diff_list.append(n_temp_diff)
                 n_temp_diff_sum=sum(n_temp_diff_list)
                 self.next_temp=self.next_temp+((n_temp_diff_sum/self.mass)/(len(n_temp_diff_list)+1))
