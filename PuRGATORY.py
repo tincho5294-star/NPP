@@ -998,7 +998,8 @@ class GridCell:
         for n in self.neighbors:
             n_temp_list.append(n.temp)
         c=299792458
-        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*self.uranium_mass*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
+        avogadro=6.022e23
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
