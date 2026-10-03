@@ -1042,6 +1042,7 @@ class GridCell:
             self.max_hypot=math.hypot(7.5,30)
             self.void=0
             self.void_temp=self.temp
+            self.next_void_temp=self.temp
             self.boiling_point=100
             self.next_direction=self.water_direction
             self.next_velocity=self.water_velocity
@@ -1049,15 +1050,6 @@ class GridCell:
             self.boron=0
             self.boron_conc=0
             self.density=safe_div(self.mass,self.level)
-            self.prev_mass=self.mass
-            self.prev_level=self.level
-            self.prev_temp=self.temp
-            self.prev_void=self.void
-            self.prev_pressure=self.pressure
-            self.prev_density=self.density
-            self.prev_water_velocity=self.water_velocity
-            self.prev_water_direction=self.water_direction
-            self.prev_boron=self.boron
         def get_neighbor(self):
             if self.area is None:
                 return
@@ -1083,7 +1075,7 @@ class GridCell:
                 C=-140.0  
                 self.viscosity=A*10**(B/(self.temp - C))
                 D=2.2
-                reynolds=(((abs(self.prev_water_velocity))*D)/self.viscosity)*10000
+                reynolds=(((abs(self.water_velocity))*D)/self.viscosity)*10000
                 self.turbulence_intensity=0.16 * (reynolds ** 0.25) #who is this mi bombo diddy epstein triple t fanum taxing level 10 rizzler gyatt blud 🥶🥶🗣🔥🔥🔥🥀🥀😭✌
                 self.max_mass=clamp(self.max_mass,0,7000)
                 self.max_level=clamp(self.max_level,0,7000)
@@ -1095,49 +1087,49 @@ class GridCell:
                     dx=n.x-self.x
                     dy=self.y-n.y
                     FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
-                theta=math.radians(self.prev_water_direction)
-                u=self.prev_water_velocity*math.cos(theta)
-                v=self.prev_water_velocity*math.sin(theta)
+                theta=math.radians(self.water_direction)
+                u=self.water_velocity*math.cos(theta)
+                v=self.water_velocity*math.sin(theta)
                 right=[n for n in self.neighbors if n.ix==self.ix+1 and n.iy==self.iy]
                 left=[n for n in self.neighbors if n.ix==self.ix-1 and n.iy==self.iy]
                 up=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy-1]
                 down=[n for n in self.neighbors if n.ix==self.ix and n.iy==self.iy+1]
                 if right:
-                    right_theta=math.radians(right[0].prev_water_direction)
-                    right_u=right[0].prev_water_velocity*math.cos(right_theta)
-                    right_v=right[0].prev_water_velocity*math.sin(right_theta)
-                    right_pressure=right[0].prev_pressure
+                    right_theta=math.radians(right[0].water_direction)
+                    right_u=right[0].water_velocity*math.cos(right_theta)
+                    right_v=right[0].water_velocity*math.sin(right_theta)
+                    right_pressure=right[0].pressure
                 else:
                     right_u=u
                     right_v=v
-                    right_pressure=self.prev_pressure
+                    right_pressure=self.pressure
                 if left:
-                    left_theta=math.radians(left[0].prev_water_direction)
-                    left_u=left[0].prev_water_velocity*math.cos(left_theta)
-                    left_v=left[0].prev_water_velocity*math.sin(left_theta)
-                    left_pressure=left[0].prev_pressure
+                    left_theta=math.radians(left[0].water_direction)
+                    left_u=left[0].water_velocity*math.cos(left_theta)
+                    left_v=left[0].water_velocity*math.sin(left_theta)
+                    left_pressure=left[0].pressure
                 else:
                     left_u=u
                     left_v=v
-                    left_pressure=self.prev_pressure
+                    left_pressure=self.pressure
                 if down:
-                    down_theta=math.radians(down[0].prev_water_direction)
-                    down_u=down[0].prev_water_velocity*math.cos(down_theta)
-                    down_v=down[0].prev_water_velocity*math.sin(down_theta)
-                    down_pressure=down[0].prev_pressure
+                    down_theta=math.radians(down[0].water_direction)
+                    down_u=down[0].water_velocity*math.cos(down_theta)
+                    down_v=down[0].water_velocity*math.sin(down_theta)
+                    down_pressure=down[0].pressure
                 else:
                     down_u=u
                     down_v=v
-                    down_pressure=self.prev_pressure
+                    down_pressure=self.pressure
                 if up:
-                    up_theta=math.radians(up[0].prev_water_direction)
-                    up_u=up[0].prev_water_velocity*math.cos(up_theta)
-                    up_v=up[0].prev_water_velocity*math.sin(up_theta)
-                    up_pressure=up[0].prev_pressure
+                    up_theta=math.radians(up[0].water_direction)
+                    up_u=up[0].water_velocity*math.cos(up_theta)
+                    up_v=up[0].water_velocity*math.sin(up_theta)
+                    up_pressure=up[0].pressure
                 else:
                     up_u=u
                     up_v=v
-                    up_pressure=self.prev_pressure
+                    up_pressure=self.pressure
                 du_dx=(right_u-left_u)/(30 if right and left else 15)
                 du_dy=(up_u-down_u)/(30 if up and down else 15)
                 dv_dx=(right_v-left_v)/(30 if right and left else 15)
@@ -1160,9 +1152,9 @@ class GridCell:
                     n.water_velocity=abs(n.water_velocity)
                 self.level=self.mass**(self.temp**0.0049)
                 self.boiling=self.temp>self.boiling_point
-                self.void_temp,self.temp=heat_exchange_1d(self.void_temp,self.temp,self.void,self.mass,0.016,dt)
+                self.next_void_temp,self.next_temp=heat_exchange_1d(self.next_void_temp,self.next_temp,self.void,self.mass,1,dt)
                 if not self.boiling:
-                    self.void_temp=self.temp
+                    self.next_void_temp=self.next_temp
                 #self.boiling_point=100*math.log10(9+abs(complex(self.pressure).real)**2.5)
                 evaporation=max(0.1*self.temp*dt,0)
                 condensation=max(2*self.pressure*dt,0)
@@ -1174,8 +1166,6 @@ class GridCell:
                     self.mass=max(self.mass-(evaporation-condensation),0)
                 self.boron_conc=safe_div(self.boron,self.mass)
                 self.next_direction=normalize360(self.next_direction)
-                self.water_direction=self.next_direction
-                self.water_velocity=self.next_velocity
                 dx=n.x-self.x
                 dy=self.y-n.y
                 FromSelfToNAngle=normalize360(math.degrees(math.atan2(dy,dx)))
@@ -1219,7 +1209,6 @@ class GridCell:
                 if not math.isfinite(v):
                     raise ValueError(f"NaN: v {v}")
                 '''
-                self.temp=self.next_temp
         def draw(self,screen):
             velocity_list=[]
             if self.owner.Area is not None:
@@ -1685,19 +1674,18 @@ while running:
     for row in water_grid:
         for w_cell in row:
             if w_cell.area is not None:
-                w_cell.prev_mass=w_cell.mass
-                w_cell.prev_level=w_cell.level
-                w_cell.prev_temp=w_cell.temp
-                w_cell.prev_void=w_cell.void
-                w_cell.prev_pressure=w_cell.pressure
-                w_cell.prev_density=w_cell.density
-                w_cell.prev_water_velocity=w_cell.water_velocity
-                w_cell.prev_water_direction=w_cell.water_direction
-                w_cell.prev_boron=w_cell.boron
+                w_cell.water_velocity=w_cell.next_velocity
+                w_cell.water_direction=w_cell.next_direction
+                w_cell.temp=w_cell.next_temp
+                w_cell.void_temp=w_cell.next_void_temp
     for row in grid:
         for cell in row:
             cell.update()
             cell.w_cell.update()
+    for row in grid:
+        for cell in row:
+            cell.temp=cell.next_temp
+            cell.neutron=cell.next_neutrons
     for button in buttons:
         if current_control_panel==1:
             button.update()
