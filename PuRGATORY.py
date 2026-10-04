@@ -985,17 +985,13 @@ class GridCell:
             return
         n_flux_diff_list=[]
         for n in self.neighbors:
-            n_n=(n.next_neutrons/(15**3))
-            n.flux=n_n*n.neutron_speed
-            self_n=(self.next_neutrons/(15**3))
-            self.flux=self_n*self.neutron_speed
             n_flux_diff=(n.flux-self.flux)
             n_flux_diff_list.append(n_flux_diff)
         n_diff_sum=sum(n_flux_diff_list)
         self.next_neutrons=self.next_neutrons+((n_diff_sum)/(len(n_flux_diff_list)+1))*dt
         if self.next_neutrons<0:
             for n in self.neighbors:
-                n.next_neutrons+=self.next_neutrons/len(self.neighbors)
+                n.next_neutrons+=(self.neutron-n.neutron)/len(self.neighbors)
             self.next_neutrons=0
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         burn_rate=0.991
@@ -1006,7 +1002,7 @@ class GridCell:
         c=299792458
         avogadro=6.022e23
         neutron_mass_constant=1.67493e-27
-        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth*5000))/self.neutron_speed,0)
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth/100*self.flux)-min((self.xenon*self.flux),self.xenon))/self.neutron_speed,0)
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
@@ -1024,6 +1020,7 @@ class GridCell:
         helium_production=DeltaMass*0.005*dt
         self.w_cell.void+=helium_production
         self.prev_uranium_mass=self.uranium_mass
+        self.flux=self.neutron_speed*(self.next_neutrons/(15**3))
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
