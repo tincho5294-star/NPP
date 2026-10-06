@@ -993,6 +993,7 @@ class GridCell:
             n_flux_diff_list.append(n_flux_diff)
         n_diff_sum=sum(n_flux_diff_list)
         self.next_flux=self.next_flux+((n_diff_sum)/(len(n_flux_diff_list)+1))*dt
+        self.next_neutrons=self.next_flux*(10*10*5)/self.neutron_speed
         if self.next_neutrons<0:
             for n in self.neighbors:
                 n.next_neutron+=(self.neutron-n.neutron)/len(self.neighbors)
@@ -1004,17 +1005,17 @@ class GridCell:
         c=299792458
         avogadro=6.022e23
         neutron_mass_constant=1.67493e-27
-        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth/100*self.flux)-min((self.Xe*self.flux),self.Xe))/self.neutron_speed,0)
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*(((self.uranium_mass/235)*avogadro)/(10*10*5))*self.neutron)-(self.CR_depth/100*self.flux)-())/self.neutron_speed,0)
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
         DeltaTemp=DeltaE/(self.uranium_mass*0.116) #first time ever i put capacity in the code
         for n in self.neighbors:
             self.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #for radiant heat transfer
-        self.neutron=self.next_neutrons
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
+        self.next_flux=self.next_neutrons/(10*10*5)*self.neutron_speed
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
