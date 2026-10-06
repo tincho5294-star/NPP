@@ -951,9 +951,13 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=22000
-        self.flux=self.neutron_speed*(self.next_neutrons/(15**3))
+        self.flux=self.neutron_speed*(self.next_neutrons/(10*10*5))
+        self.next_flux=self.flux
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
-        self.fission_products=[]
+        self.Xe=0 #im not fucking considering about iodine
+        self.Sm149=0
+        self.Sm151=0
+        self.Eu=0
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
         G=clamp(255-255*((self.temp-325)/575)+800*((self.temp/1500)*8),0,255)
@@ -988,10 +992,10 @@ class GridCell:
             n_flux_diff=(n.flux-self.flux)
             n_flux_diff_list.append(n_flux_diff)
         n_diff_sum=sum(n_flux_diff_list)
-        self.next_neutrons=self.next_neutrons+((n_diff_sum)/(len(n_flux_diff_list)+1))*dt
+        self.next_flux=self.next_flux+((n_diff_sum)/(len(n_flux_diff_list)+1))*dt
         if self.next_neutrons<0:
             for n in self.neighbors:
-                n.next_neutrons+=(self.neutron-n.neutron)/len(self.neighbors)
+                n.next_neutron+=(self.neutron-n.neutron)/len(self.neighbors)
             self.next_neutrons=0
         self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         n_temp_list=[]
@@ -1000,16 +1004,7 @@ class GridCell:
         c=299792458
         avogadro=6.022e23
         neutron_mass_constant=1.67493e-27
-        neutron_posion=0
-        products_sum=0
-        for p in self.fission_products:
-            if p[0]=="Xe" or p[2]=="Xe":
-                products_sum+=1
-                neutron_posion+=2600000
-            if p[0]=="Sm" or p[2]=="Sm":
-                products_sum+=1
-                neutron_posion+=1000000
-            self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth/100*self.flux)-min((xenon*self.flux),xenon))/self.neutron_speed,0)
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*((self.uranium_mass/235)*avogadro)*self.neutron)-(self.CR_depth/100*self.flux)-min((self.Xe*self.flux),self.Xe))/self.neutron_speed,0)
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
@@ -1019,32 +1014,7 @@ class GridCell:
         self.neutron=self.next_neutrons
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
-        #아래 상수들은 근거 있는 상수들(학자들이 실험해서 낸거. 암튼 내 말 맞음).그리고 아래 공식은 SEMF (semi empirical mass formula). (암튼 내말 맞음22)
-        EB=0.5*(15.8*self.uranium_mass-18.3*self.uranium_mass**(2/3)-0.714*(self.uranium_mass**(2/3))*(1-(2*(self.neutron/self.uranium_mass))**2)-23*((-1)**self.uranium_mass)/(self.uranium_mass**(1/2)))
-        u235_fission_matrix=[
-            {"Z1":30,"Element1":"Zn","A1":77,"Z2":62,"Element2":"Sm","A2":159},
-            {"Z1":31,"Element1":"Ga","A1":80,"Z2":61,"Element2":"Pm","A2":156},
-            {"Z1":32,"Element1":"Ge","A1":82,"Z2":60,"Element2":"Nd","A2":154},
-            {"Z1":33,"Element1":"As","A1":85,"Z2":59,"Element2":"Pr","A2":151},
-            {"Z1":34,"Element1":"Se","A1":87,"Z2":58,"Element2":"Ce","A2":149},
-            {"Z1":35,"Element1":"Br","A1":90,"Z2":57,"Element2":"La","A2":146},
-            {"Z1":36,"Element1":"Kr","A1":92,"Z2":56,"Element2":"Ba","A2":144},
-            {"Z1":37,"Element1":"Rb","A1":95,"Z2":55,"Element2":"Cs","A2":141},
-            {"Z1":38,"Element1":"Sr","A1":94,"Z2":54,"Element2":"Xe","A2":142},
-            {"Z1":39,"Element1":"Y","A1":100,"Z2":53,"Element2":"I","A2":136},
-            {"Z1":40,"Element1":"Zr","A1":100,"Z2":52,"Element2":"Te","A2":136},
-            {"Z1":41,"Element1":"Nb","A1":105,"Z2":51,"Element2":"Sb","A2":131},
-            {"Z1":42,"Element1":"Mo","A1":104,"Z2":50,"Element2":"Sn","A2":132},
-            {"Z1":43,"Element1":"Tc","A1":110,"Z2":49,"Element2":"In","A2":126},
-            {"Z1":44,"Element1":"Ru","A1":113,"Z2":48,"Element2":"Cd","A2":123},
-            {"Z1":45,"Element1":"Rh","A1":115,"Z2":47,"Element2":"Ag","A2":121},
-            {"Z1":46,"Element1":"Pd","A1":118,"Z2":46,"Element2":"Pd","A2":118}
-        ]
-        sorted_matrix=sorted(u235_fission_matrix,key=lambda x:abs(x["A1"]+x["A2"]-235))
-        closest_pair=sorted_matrix[0]
-        self.fission_products=(closest_pair["Element1"],closest_pair["A1"],closest_pair["Element2"],closest_pair["A2"])
-        self.prev_uranium_mass=self.uranium_mass
-        self.flux=self.neutron_speed*(self.next_neutrons/(15**3))
+        self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
@@ -1164,8 +1134,8 @@ class GridCell:
                 dv_dy=(up_v-down_v)/(30 if up and down else 15)
                 dp_dx=(right_pressure-left_pressure)/(30 if right and left else 15)
                 dp_dy=(up_pressure-down_pressure)/(30 if up and down else 15)
-                lap_u=(right_u+left_u+up_u+down_u-(4*u))/(15**2)
-                lap_v=(right_v+left_v+up_v+down_v-(4*v))/(15**2)
+                lap_u=(right_u+left_u+up_u+down_u-(4*u))/(10**2)
+                lap_v=(right_v+left_v+up_v+down_v-(4*v))/(10**2)
                 density=max(self.density,1e-6)
                 apx=-(dp_dx/density)
                 apy=-(dp_dy/density)
@@ -1714,6 +1684,8 @@ while running:
         for cell in row:
             cell.temp=cell.next_temp
             cell.neutron=cell.next_neutrons
+            cell.prev_uranium_mass=cell.uranium_mass
+            cell.flux=cell.next_flux
     for button in buttons:
         if current_control_panel==1:
             button.update()
