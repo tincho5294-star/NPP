@@ -955,9 +955,6 @@ class GridCell:
         self.next_flux=self.flux
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
         self.Xe=0 #im not fucking considering about iodine
-        self.Sm149=0
-        self.Sm151=0
-        self.Eu=0
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
         G=clamp(255-255*((self.temp-325)/575)+800*((self.temp/1500)*8),0,255)
@@ -1005,7 +1002,10 @@ class GridCell:
         c=299792458
         avogadro=6.022e23
         neutron_mass_constant=1.67493e-27
-        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*(((self.uranium_mass/235)*avogadro)/(10*10*5))*self.neutron)-(self.CR_depth/100*self.flux)-((self.Xe/(10*10*5))*(2600000*1e-28))/self.neutron_speed,0)
+        uranium_particle=self.uranium_mass/235*avogadro
+        neutron_n=self.neutron/(10*10*5)
+        Xe_density=Xe/(10*10*5)
+        self.next_neutrons=max((self.next_neutrons+(random.randint(2,5)*uranium_particle*neutron_n)-(self.CR_depth/100*self.flux)-(Xe_density*(2600000*1e-28)))/self.neutron_speed,0)
         self.uranium_mass=max(self.uranium_mass-self.neutron*neutron_mass_constant*1000,0)
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
