@@ -984,6 +984,9 @@ class GridCell:
         if self.Area is None:
             return
         n_flux_diff_list=[]
+        neutron_mass_constant=1.675e-27
+        neutron_e=0.5*neutron_mass_constant*self.neutron_speed**2
+        self.neutron_speed=math.sqrt(2*E/neutron_mass_constant)
         for n in self.neighbors:
             n_flux_diff=(n.flux-self.flux)
             n_flux_diff_list.append(n_flux_diff)
@@ -994,8 +997,6 @@ class GridCell:
             for n in self.neighbors:
                 n.next_neutron+=(self.neutron-n.neutron)/len(self.neighbors)
             self.next_neutrons=0
-        neutron_mass_constant=1.675e-27
-        self.neutron_speed=lerp(self.neutron_speed,self.neutron_speed/(self.w_cell.level+1e-6)/(self.w_cell.density+1e-6),dt)
         n_temp_list=[]
         for n in self.neighbors:
             n_temp_list.append(n.temp)
