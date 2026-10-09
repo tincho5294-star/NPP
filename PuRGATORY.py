@@ -950,7 +950,7 @@ class GridCell:
         self.search_size=20
         self.next_neutrons=1
         self.neutron_speed=22000
-        self.flux=self.neutron_speed*(self.next_neutrons/(10*10*5))
+        self.flux=self.neutron_speed*(self.next_neutrons/(5*5*10))
         self.next_flux=self.flux
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
         self.Xe=0 #im not fucking considering about iodine
@@ -1001,7 +1001,7 @@ class GridCell:
             n_flux_diff_list.append(n_flux_diff)
         n_diff_sum=sum(n_flux_diff_list)
         self.next_flux=self.next_flux+((n_diff_sum)/(len(n_flux_diff_list)+1))*dt
-        self.next_neutrons=self.next_flux*(10*10*5)/self.neutron_speed
+        self.next_neutrons=self.next_flux*(5*5*10)/self.neutron_speed
         if self.next_neutrons<0:
             for n in self.neighbors:
                 n.next_neutron+=(self.neutron-n.neutron)/len(self.neighbors)
@@ -1011,8 +1011,8 @@ class GridCell:
             n_temp_list.append(n.temp)
         c=299792458
         uranium_particle=self.uranium_mass/235*avogadro
-        neutron_n=self.neutron/(10*10*5)
-        Xe_density=self.Xe/(10*10*5)
+        neutron_n=self.neutron/(5*5*10)
+        Xe_density=self.Xe/(5*5*10)
         self.next_neutrons=max(self.next_neutrons+(2.5*uranium_particle*(1-math.exp(-neutron_n)))-(self.CR_depth/100*self.flux)-(Xe_density*(2600000*1e-28))/self.neutron_speed,0)
         uranium_particle=max(uranium_particle-((uranium_particle*(1-math.exp(-neutron_n)))/self.neutron_speed),0)
         self.uranium_mass=uranium_particle*235/avogadro
@@ -1024,7 +1024,7 @@ class GridCell:
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
-        self.next_flux=self.next_neutrons/(10*10*5)*self.neutron_speed
+        self.next_flux=self.next_neutrons/(5*5*10)*self.neutron_speed
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
