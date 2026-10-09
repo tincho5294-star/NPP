@@ -954,6 +954,8 @@ class GridCell:
         self.next_flux=self.flux
         self.w_cell=GridCell.WaterCell(self.x,self.y,self,ix,iy,area)
         self.Xe=0 #im not fucking considering about iodine
+        self.neutron_e=1/2*1.675e-27*self.neutron_speed**2
+        self.next_neutron_e=self.neutron_e
     def get_color(self):
         R=clamp(5+245*(self.temp/325),0,255)
         G=clamp(255-255*((self.temp-325)/575)+800*((self.temp/1500)*8),0,255)
@@ -983,10 +985,17 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
+        avogadro=6.022e23
         n_flux_diff_list=[]
         neutron_mass_constant=1.675e-27
-        neutron_e=0.5*neutron_mass_constant*self.neutron_speed**2
-        self.neutron_speed=math.sqrt(2*E/neutron_mass_constant)
+        self.neutron_e=0.5*neutron_mass_constant*self.neutron_speed**2
+        water_particle_density=(self.w_cell.density*avogadro)/18.015
+        SDC=0.93*(water_particle_density*(43.8e-24))
+        energy_loss=SDC*self.neutron_speed*self.neutron_e*dt
+        self.next_neutron_e=self.neutron_e-energy_loss
+        tau=(0.16/SDC)*math.log(self.neutron_e/self.next_neutron_e)
+        d=math.sqrt(tau)
+        self.neutron_speed=d/dt
         for n in self.neighbors:
             n_flux_diff=(n.flux-self.flux)
             n_flux_diff_list.append(n_flux_diff)
@@ -1001,7 +1010,6 @@ class GridCell:
         for n in self.neighbors:
             n_temp_list.append(n.temp)
         c=299792458
-        avogadro=6.022e23
         uranium_particle=self.uranium_mass/235*avogadro
         neutron_n=self.neutron/(10*10*5)
         Xe_density=self.Xe/(10*10*5)
@@ -1688,6 +1696,7 @@ while running:
             cell.neutron=cell.next_neutrons
             cell.prev_uranium_mass=cell.uranium_mass
             cell.flux=cell.next_flux
+            cell.neutron_e=cell.next_neutron_e
     for button in buttons:
         if current_control_panel==1:
             button.update()
