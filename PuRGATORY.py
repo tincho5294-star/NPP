@@ -1015,7 +1015,8 @@ class GridCell:
         Xe_density=self.Xe/(5*5*10)
         Xe_collision_rate=(1-math.exp(-Xe_density*(2600000*1e-28)/self.neutron_speed))
         uranium_density=uranium_particle/(5*5*10)
-        self.next_neutrons=max(self.next_neutrons+(2.5*(((self.neutron)*(1-math.exp(-neutron_n)))/self.neutron_speed)*(1-math.exp(-uranium_density)))-(self.CR_depth/100*self.flux)-(self.flux*Xe_collision_rate),0)
+        CR_touchable_surface_area=(5*5)+((10*5)*4*(self.CR_depth/100))
+        self.next_neutrons=max(self.next_neutrons+(2.5*((self.neutron)*(1-math.exp(-neutron_n/self.neutron_speed)))*(1-math.exp(-uranium_density)))-(CR_touchable_surface_area*self.flux)-(self.flux*Xe_collision_rate),0)
         uranium_particle=max(uranium_particle-((uranium_particle*(1-math.exp(-neutron_n)))/self.neutron_speed),0)
         self.uranium_mass=uranium_particle*235/avogadro
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
