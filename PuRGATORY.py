@@ -1022,8 +1022,10 @@ class GridCell:
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
         DeltaTemp=DeltaE/(self.uranium_mass*0.116) #first time ever i put capacity in the code
+        constant=2.095e-9
+        n_temp_diff_list=[]
         for n in self.neighbors:
-            self.next_temp=heat_exchange(self.next_temp,n_temp_list,self.uranium_mass,dt,dt) #for radiant heat transfer
+            n.next_temp=n.next_temp+((self.temp**4*constant*dt)/(n.uranium_mass*4.184))/len(self.neighbors)
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
