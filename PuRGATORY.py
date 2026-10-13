@@ -1022,10 +1022,11 @@ class GridCell:
         DeltaMass=(self.prev_uranium_mass-self.uranium_mass)
         DeltaE=(DeltaMass/1000)*c**2
         DeltaTemp=DeltaE/(self.uranium_mass*0.116) #first time ever i put capacity in the code
-        constant=2.095e-9
+        emissivty=0.25 #just a constant
+        constant=emissivity*5.67e-8
         n_temp_diff_list=[]
         for n in self.neighbors:
-            n.next_temp=n.next_temp+((self.temp**4*constant*dt)/(n.uranium_mass*4.184))/len(self.neighbors)
+            n.next_temp=n.next_temp+(((self.temp+273.15)**4*constant*dt)/(n.uranium_mass*4.184))/len(self.neighbors)
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
