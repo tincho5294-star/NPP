@@ -987,7 +987,7 @@ class GridCell:
             return
         control_rod_amount=4
         assembly_volume=0.209 #m^3 btw
-        assembly_mass=640000
+        assembly_mass=640000 
         avogadro=6.022e23
         n_flux_diff_list=[]
         neutron_mass_constant=1.675e-27
@@ -1018,7 +1018,7 @@ class GridCell:
         neutron_n=self.neutron/((assembly_volume*0.74)/neutron_volume_constant)
         Xe_density=self.Xe/(assembly_mass/135*avogadro)
         Xe_collision_rate=(1-math.exp(-Xe_density*(2600000*1e-28)/self.neutron_speed))
-        uranium_density=uranium_particle/(400000/235*avogadro)
+        uranium_density=uranium_particle/(640000/235*avogadro)
         CR_touchable_surface_area=((math.pi*((1.24**2)/4))+(math.pi*1.24*381)*(self.CR_depth/100))*control_rod_amount
         self.next_neutrons=max(self.next_neutrons+(2.5*((self.neutron)*(1-math.exp(-neutron_n/self.neutron_speed)))*(1-math.exp(-uranium_density)))-(CR_touchable_surface_area*self.flux)-(self.flux*Xe_collision_rate),0)
         uranium_particle=max(uranium_particle-((uranium_particle*(1-math.exp(-neutron_n)))/self.neutron_speed),0)
@@ -1029,14 +1029,16 @@ class GridCell:
         emissivity=0.25 #just a constant
         stefan_boltzmann=5.67e-8
         constant=emissivity*stefan_boltzmann
-        n_temp_diff_list=[]
         for n in self.neighbors:
-            n.next_temp=n.next_temp+(((self.temp+273.15)**4*constant*dt)/(n.uranium_mass*4.184))/len(self.neighbors)
+            n.next_temp=n.next_temp+(((self.temp+273.15)**4*constant*dt)/(n.uranium_mass*4.184))/(len(self.neighbors)*3)
+            n.w_cell.next_temp+=(((self.temp+273.15)**4*constant*dt)/(n.w_cell.mass*4.184))/(len(self.neighbors)*3)
+            n.w_cell.next_void_temp+=(((self.temp+273.15)**4*constant*dt)/(n.w_cell.void*4.184))/(len(self.neighbors)*3)
         self.next_temp=self.next_temp-(((self.temp+273.15)**4*constant*dt)/(self.uranium_mass*4.184))
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
-        self.next_flux=self.next_neutrons/(5*5*10)*self.neutron_speed
+        next_neutron_n=self.next_neutrons/((assembly_volume*0.74)/neutron_volume_constant)
+        self.next_flux=self.next_neutrons/next_neutron_n*self.neutron_speed
     class WaterCell: #the class of PURE AGONY.
         def __init__(self,x,y,gridcell,ix,iy,area):
             self.search_size=20
@@ -1348,7 +1350,7 @@ class CircSystems:    # ah shi here we go again
                     elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                         self.exit.w_cell.mass+=p["amount"]
                         p["amount"]=0
-                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
+                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
                         p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
@@ -1356,7 +1358,7 @@ class CircSystems:    # ah shi here we go again
                         if p["velocity"]==0:
                             pass
                         else:
-                            p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,1,1,1,dt)
+                            p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
                             p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
                     self.exit.w_cell.next_velocity=abs(self.exit.w_cell.next_velocity)
                 if p["progress"]<=0:
@@ -1369,7 +1371,7 @@ class CircSystems:    # ah shi here we go again
                         p["amount"]-=(self.inlet_valve*(-p["velocity"])*dt)*p["amount"]
                         self.entrance.w_cell.mass+=self.inlet_valve*(-p["velocity"])*dt*p["amount"]
                     p["temp"],self.entrance.w_cell.temp=heat_exchange_1d(p["temp"],self.entrance.w_cell.temp,p["amount"],self.entrance.w_cell.mass,(self.inlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
-                    p["velocity"],self.entrance.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.entrance.w_cell.water_velocity,1,1,1,dt)
+                    p["velocity"],self.entrance.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.entrance.w_cell.water_velocity,p["amount"],self.entrance.w_cell.mass,1,dt)
                     self.entrance.w_cell.next_velocity=abs(self.entrance.w_cell.next_velocity)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
                     p["amount"]=p["amount"]-(7000*dt*(knobs[9].value/100)) if p["amount"]>=(7000*dt*(knobs[9].value/100)) else 0
