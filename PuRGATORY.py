@@ -985,6 +985,8 @@ class GridCell:
     def update(self):
         if self.Area is None:
             return
+        control_rod_amount=4
+        assembly_volume=0.209 #m^3 btw
         avogadro=6.022e23
         n_flux_diff_list=[]
         neutron_mass_constant=1.675e-27
@@ -1015,7 +1017,7 @@ class GridCell:
         Xe_density=self.Xe/(5*5*10)
         Xe_collision_rate=(1-math.exp(-Xe_density*(2600000*1e-28)/self.neutron_speed))
         uranium_density=uranium_particle/(5*5*10)
-        CR_touchable_surface_area=(math.pi*((1.24**2)/4))+(math.pi*1.24*381)*(self.CR_depth/100)
+        CR_touchable_surface_area=((math.pi*((1.24**2)/4))+(math.pi*1.24*381)*(self.CR_depth/100))*control_rod_amount
         self.next_neutrons=max(self.next_neutrons+(2.5*((self.neutron)*(1-math.exp(-neutron_n/self.neutron_speed)))*(1-math.exp(-uranium_density)))-(CR_touchable_surface_area*self.flux)-(self.flux*Xe_collision_rate),0)
         uranium_particle=max(uranium_particle-((uranium_particle*(1-math.exp(-neutron_n)))/self.neutron_speed),0)
         self.uranium_mass=uranium_particle*235/avogadro
@@ -1023,7 +1025,8 @@ class GridCell:
         DeltaE=(DeltaMass/1000)*c**2
         DeltaTemp=DeltaE/(self.uranium_mass*0.116) #first time ever i put capacity in the code
         emissivity=0.25 #just a constant
-        constant=emissivity*5.67e-8
+        stefan_boltzmann=5.67e-8
+        constant=emissivity*stefan_boltzmann
         n_temp_diff_list=[]
         for n in self.neighbors:
             n.next_temp=n.next_temp+(((self.temp+273.15)**4*constant*dt)/(n.uranium_mass*4.184))/len(self.neighbors)
