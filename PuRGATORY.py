@@ -937,8 +937,8 @@ class GridCell:
         self.next_temp=20
         self.ix=ix
         self.iy=iy
-        self.uranium_mass=5000
-        self.prev_uranium_mass=5000
+        self.uranium_mass=400000
+        self.prev_uranium_mass=400000
         self.neutron=1
         self.temp=20
         self.search_size=20
@@ -987,9 +987,11 @@ class GridCell:
             return
         control_rod_amount=4
         assembly_volume=0.209 #m^3 btw
+        assembly_mass=640000
         avogadro=6.022e23
         n_flux_diff_list=[]
         neutron_mass_constant=1.675e-27
+        neutron_volume_constant=2.14e-45
         self.neutron_e=0.5*neutron_mass_constant*self.neutron_speed**2
         water_particle_density=(self.w_cell.density*avogadro)/18.015
         SDC=0.93*(water_particle_density*(43.8e-24))
@@ -1013,10 +1015,10 @@ class GridCell:
             n_temp_list.append(n.temp)
         c=299792458
         uranium_particle=self.uranium_mass/235*avogadro
-        neutron_n=self.neutron/(5*5*10)
-        Xe_density=self.Xe/(5*5*10)
+        neutron_n=self.neutron/((assembly_volume*0.74)/neutron_volume_constant)
+        Xe_density=self.Xe/(assembly_mass/135*avogadro)
         Xe_collision_rate=(1-math.exp(-Xe_density*(2600000*1e-28)/self.neutron_speed))
-        uranium_density=uranium_particle/(5*5*10)
+        uranium_density=uranium_particle/(400000/235*avogadro)
         CR_touchable_surface_area=((math.pi*((1.24**2)/4))+(math.pi*1.24*381)*(self.CR_depth/100))*control_rod_amount
         self.next_neutrons=max(self.next_neutrons+(2.5*((self.neutron)*(1-math.exp(-neutron_n/self.neutron_speed)))*(1-math.exp(-uranium_density)))-(CR_touchable_surface_area*self.flux)-(self.flux*Xe_collision_rate),0)
         uranium_particle=max(uranium_particle-((uranium_particle*(1-math.exp(-neutron_n)))/self.neutron_speed),0)
