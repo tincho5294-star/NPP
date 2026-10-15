@@ -1351,9 +1351,9 @@ class CircSystems:    # ah shi here we go again
                         pass
                     elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                         self.exit.w_cell.mass+=p["amount"]
-                        p["amount"]=0
-                        p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
+                        p_p=p["amount"]*p["velocity"]
                         p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,self.outlet_valve*abs(p["velocity"]),dt)
+                        p["amount"]=0
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
