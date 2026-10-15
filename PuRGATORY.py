@@ -1033,8 +1033,9 @@ class GridCell:
             n.next_temp=n.next_temp+(((self.temp+273.15)**4*constant*dt)/(n.uranium_mass*0.116))/(len(self.neighbors)*3)
             n.w_cell.next_temp+=(((self.w_cell.temp+273.15)**4*constant*dt)/(n.w_cell.mass*4.184))/(len(self.neighbors)*3)
             n.w_cell.next_void_temp+=(((self.w_cell.void_temp+273.15)**4*constant*dt)/(n.w_cell.void*2))/(len(self.neighbors)*3)
-        self.next_temp=self.next_temp-(((self.temp+273.15)**4*constant*dt)/(self.uranium_mass*4.184))
-        self.w_cell.next_temp-=
+        self.next_temp=self.next_temp-(((self.temp+273.15)**4*constant*dt)/(self.uranium_mass*0.116))
+        self.w_cell.next_temp=self.w_cell.next_temp-((self.w_cell.temp+273.15)**4*constant*dt)/(n.w_cell.mass*4.184)
+        self.w_cell.next_void_temp=self.w_cell.next_void_temp-((self.w_cell.void_temp+273.15)**4*constant*dt)/(n.w_cell.void*2)
         self.next_temp+=DeltaTemp
         self.temp=self.next_temp
         self.Xe+=(DeltaMass/235)*avogadro*0.02 #방사성 붕괴 생각 X
