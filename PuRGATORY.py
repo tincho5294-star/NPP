@@ -1353,7 +1353,7 @@ class CircSystems:    # ah shi here we go again
                         self.exit.w_cell.mass+=p["amount"]
                         p["amount"]=0
                         p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
-                        p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
+                        p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,self.outlet_valve*abs(p["velocity"]),dt)
                     else:
                         p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
                         self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
@@ -1361,7 +1361,7 @@ class CircSystems:    # ah shi here we go again
                             pass
                         else:
                             p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
-                            p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,(self.outlet_valve*abs(p["velocity"])*dt)*p["amount"],dt)
+                            p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,self.outlet_valve*abs(p["velocity"])),dt)
                     self.exit.w_cell.next_velocity=abs(self.exit.w_cell.next_velocity)
                 if p["progress"]<=0:
                     if p["velocity"]>0:
