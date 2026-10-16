@@ -1350,18 +1350,33 @@ class CircSystems:    # ah shi here we go again
                     if p["velocity"]<0:
                         pass
                     elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
-                        self.exit.w_cell.mass+=p["amount"]
                         p_p=p["amount"]*p["velocity"]
-                        p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,self.outlet_valve*abs(p["velocity"]),dt)
+                        exit_p=self.exit.w_cell.mass*self.exit.w_cell.water_velocity
+                        exit_p+=p_p
+                        self.exit.w_cell.water_velocity=exit_p/self.exit.w_cell.mass
+                        adding_U=p["temp"]*p["amount"]
+                        exit_U=self.exit.w_cell.mass*self.exit.w_cell.temp
+                        exit_U+=adding_U
+                        self.exit.w_cell.mass+=p["amount"]
+                        self.exit.w_cell.next_temp=exit_U/self.exit.w_cell.mass
+                        p["temp"]-=adding_U/p["amount"]
                         p["amount"]=0
                     else:
-                        p["amount"]-=(self.outlet_valve*p["velocity"]*dt)*p["amount"]
-                        self.exit.w_cell.mass+=self.outlet_valve*p["velocity"]*dt*p["amount"]
+                        flowing=self.outlet_valve*p["velocity"]*dt*p["amount"]
+                        p["amount"]-=flowing
+                        self.exit.w_cell.mass+=flowing
                         if p["velocity"]==0:
                             pass
                         else:
-                            p["velocity"],self.exit.w_cell.water_velocity=heat_exchange_1d(p["velocity"],self.exit.w_cell.water_velocity,p["amount"],self.exit.w_cell.mass,1,dt)
-                            p["temp"],self.exit.w_cell.temp=heat_exchange_1d(p["temp"],self.exit.w_cell.temp,p["amount"],self.exit.w_cell.mass,self.outlet_valve*abs(p["velocity"])),dt)
+                            p_p=flowing*p["velocity"]
+                            exit_p=self.exit.w_cell.mass*self.exit.w_cell.water_velocity
+                            exit_p+=p_p
+                            self.exit.w_cell.water_velocity=exit_p/self.exit.w_cell.mass
+                            adding_U=p["temp"]*flowing
+                            exit_U=self.exit.w_cell.mass*self.exit.w_cell.temp
+                            exit_U+=adding_U
+                            self.exit.w_cell.next_temp=exit_U/self.exit.w_cell.mass
+                            p["temp"]-=adding_U/p["amount"]
                     self.exit.w_cell.next_velocity=abs(self.exit.w_cell.next_velocity)
                 if p["progress"]<=0:
                     if p["velocity"]>0:
