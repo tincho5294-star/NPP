@@ -1352,7 +1352,8 @@ class CircSystems:    # ah shi here we go again
                     elif p["amount"]<=self.outlet_valve*p["velocity"]*dt*p["amount"] and p["velocity"]>0:
                         p_p=p["amount"]*p["velocity"]
                         exit_p=self.exit.w_cell.mass*self.exit.w_cell.water_velocity
-                        exit_p+=p_p
+                        exit_p+=p_p*dt
+                        p_p-=p_p*dt
                         self.exit.w_cell.water_velocity=exit_p/self.exit.w_cell.mass
                         adding_U=p["temp"]*p["amount"]
                         exit_U=self.exit.w_cell.mass*self.exit.w_cell.temp
@@ -1370,7 +1371,7 @@ class CircSystems:    # ah shi here we go again
                         else:
                             p_p=flowing*p["velocity"]
                             exit_p=self.exit.w_cell.mass*self.exit.w_cell.water_velocity
-                            exit_p+=p_p
+                            exit_p+=p_p*dt
                             self.exit.w_cell.water_velocity=exit_p/self.exit.w_cell.mass
                             adding_U=p["temp"]*flowing
                             exit_U=self.exit.w_cell.mass*self.exit.w_cell.temp
@@ -1384,7 +1385,7 @@ class CircSystems:    # ah shi here we go again
                     elif p["amount"]<=(self.inlet_valve*(-p["velocity"])*dt)*p["amount"] and p["velocity"]<0:
                         p_p=p["amount"]*(-p["velocity"])
                         entrance_p=self.entrance.w_cell.mass*self.entrance.w_cell.water_velocity
-                        entrance_p+=p_p
+                        entrance_p+=p_p*dt
                         self.entrance.w_cell.water_velocity=exit_p/self.entrance.w_cell.mass
                         adding_U=p["temp"]*p["amount"]
                         entrance_U=self.entrance.w_cell.mass*self.entrance.w_cell.temp
@@ -1402,12 +1403,12 @@ class CircSystems:    # ah shi here we go again
                         else:
                             p_p=flowing*p["velocity"]
                             entrance_p=self.entrance.w_cell.mass*self.entrance.w_cell.water_velocity
-                            entrance_p+=p_p
+                            entrance_p+=p_p*dt
                             self.entrance.w_cell.water_velocity=entrance_p/self.entrance.w_cell.mass
                             adding_U=p["temp"]*flowing
                             entrance_U=self.entrance.w_cell.mass*self.entrance.w_cell.temp
                             entrance_U+=adding_U
-                            self.entrance.w_cell.next_temp=exit_U/self.entrance.w_cell.mass
+                            self.entrance.w_cell.next_temp=entrance_U/self.entrance.w_cell.mass
                             p["temp"]-=adding_U/p["amount"]
                     self.entrance.w_cell.next_velocity=abs(self.entrance.w_cell.next_velocity)
                 if (0.6-dt)<=p["progress"]<=(0.6+dt):
@@ -1420,7 +1421,10 @@ class CircSystems:    # ah shi here we go again
                 current=p
                 later = self.water_entry[i+1] if i+1 < len(self.water_entry) else None
                 if previous is not None:
-                    previous["velocity"],current["velocity"]=heat_exchange_1d(previous["velocity"],current["velocity"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"])),0),dt)
+                    current_p=current["amount"]*current["velocity"]
+                    previous_p=previous["amount"]*previous["velocity"]
+                    previous_p+=current_p*dt
+                    current_p-=current_p*dt
                     previous["temp"],current["temp"]=heat_exchange_1d(previous["temp"],current["temp"],previous["amount"],current["amount"],max(60*(dt-abs((current["progress"]-dt)-previous["progress"]))*abs(1-(previous["velocity"]-current["velocity"])),0),dt)
                 if later is not None:
                     current["velocity"],later["velocity"]=heat_exchange_1d(current["velocity"],later["velocity"],current["amount"],later["amount"],max(safe_div(1,dt)*(dt-abs((later["progress"]-dt)-current["progress"])),0),dt)
